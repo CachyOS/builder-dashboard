@@ -1,0 +1,33 @@
+name: Create vercel preview URL on pull request
+on:
+  pull_request:
+    branches:
+      - main
+jobs:
+  build_and_deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: oven-sh/setup-bun@v1
+      - uses: dkershner6/vercel-set-env-action@v3
+        with:
+          token: ${{ secrets.VERCEL_TOKEN }}
+          projectName: builder-dashboard
+          envVariableKeys: COOKIE_SECRET,CACHY_BUILDER_API_BASE_URL
+        env:
+          COOKIE_SECRET: ${{ secrets.COOKIE_SECRET }}
+          TARGET_COOKIE_SECRET: preview,development,production
+          TYPE_COOKIE_SECRET: encrypted
+          CACHY_BUILDER_API_BASE_URL: ${{ secrets.CACHY_BUILDER_API_BASE_URL }}
+          TARGET_CACHY_BUILDER_API_BASE_URL: preview,development,production
+          TYPE_CACHY_BUILDER_API_BASE_URL: plain
+      - uses: amondnet/vercel-action@v25
+        id: vercel-deploy
+        with:
+          vercel-token: ${{ secrets.VERCEL_TOKEN }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          vercel-org-id: ${{ secrets.ORG_ID }}
+          vercel-project-id: ${{ secrets.PROJECT_ID }}
+      - name: preview-url
+        run: |
+          echo ${{ steps.vercel-deploy.outputs.preview-url }}
