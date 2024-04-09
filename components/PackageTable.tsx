@@ -238,6 +238,7 @@ export default function PackageTable({
                 <Link
                   href={`/api/logs/${pkg.march}/${pkg.pkgbase}`}
                   target="_blank"
+                  prefetch={false}
                 >
                   <Button
                     className="text-dark-tremor-content-strong dark:text-tremor-content-strong dark:bg-white bg-black hover:bg-gray-700 dark:hover:bg-gray-200 text-right"
