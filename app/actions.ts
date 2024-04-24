@@ -4,7 +4,9 @@ import fetcher from '@/lib/fetcher';
 import {SessionData, defaultSession, sessionOptions} from '@/lib/session';
 import {
   BuilderPackage,
+  BuilderRBPackage,
   BuilderPackageArchitecture,
+  BuilderPackageRepository,
 } from '@/types/BuilderPackage';
 import {getIronSession} from 'iron-session';
 import {cookies, headers} from 'next/headers';
@@ -84,6 +86,22 @@ export async function getPackages() {
   return res;
 }
 
+export async function getRBPackages() {
+  const session = await getSession();
+  if (!session.isLoggedIn) {
+    return redirect('/');
+  }
+  const res = await fetcher<BuilderRBPackage[]>(
+    '/v1/rebuild-status',
+    session.token,
+    headers()
+  ).catch(() => {});
+  if (!res || !Array.isArray(res)) {
+    return [];
+  }
+  return res;
+}
+
 export async function getPackageLog(
   pkg: string,
   march: BuilderPackageArchitecture
@@ -148,26 +166,27 @@ export async function addPackage(_: any, formData: FormData) {
 
 export async function rebuildPackage(_: any, formData: FormData) {
   const session = await getSession();
-  const pkgname = formData.get('pkgname')?.toString().trim() ?? '';
   const march = formData.get('march')?.toString().trim() ?? '';
+  const repository = formData.get('repository')?.toString().trim() ?? '';
+  const pkgbase = formData.get('pkgbase')?.toString().trim() ?? '';
   if (
-    !pkgname ||
     !march ||
+    !repository ||
+    !pkgbase ||
     !Object.values(BuilderPackageArchitecture).includes(
       march as BuilderPackageArchitecture
+    ) ||
+    !Object.values(BuilderPackageRepository).includes(
+      repository as BuilderPackageRepository
     )
   ) {
     return redirect('/dashboard');
   }
   const res = await fetcher<{success: boolean}>(
-    `${process.env.CACHY_BUILDER_API_BASE_URL}/v1/packages`,
+    `${process.env.CACHY_BUILDER_API_BASE_URL}/v1/rebuild/${march}/${repository}/${pkgbase}`,
     session.token,
     headers(),
     {
-      body: JSON.stringify({
-        march,
-        pkgname,
-      }),
       method: 'PUT',
     }
   ).catch(() => {});

@@ -29,6 +29,14 @@ export interface BuilderPackage {
   version: string;
 }
 
+export interface BuilderRBPackage {
+  status: BuilderPackageStatus;
+  updated: number;
+  march: BuilderPackageArchitecture;
+  repository: BuilderPackageRepository;
+  pkgbase: string;
+}
+
 export interface BuilderPackageWithID extends BuilderPackage {
   packageID: string;
 }
