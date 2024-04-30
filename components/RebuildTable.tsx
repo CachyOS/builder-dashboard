@@ -1,5 +1,6 @@
 'use client';
 
+import {getRebuildPackages} from '@/app/actions';
 import {BuilderPackageDatabase} from '@/lib/db';
 import {getColor} from '@/lib/util';
 import {
@@ -8,7 +9,12 @@ import {
   BuilderPackageStatus,
   BuilderRebuildPackageWithID,
 } from '@/types/BuilderPackage';
-import {RiArticleLine, RiSearchLine, RiSoundModuleFill} from '@remixicon/react';
+import {
+  RiArticleLine,
+  RiRefreshLine,
+  RiSearchLine,
+  RiSoundModuleFill,
+} from '@remixicon/react';
 import {
   Badge,
   Button,
@@ -26,6 +32,7 @@ import {
 } from '@tremor/react';
 import Link from 'next/link';
 import {useMemo, useState} from 'react';
+import {toast} from 'react-toastify';
 import {MangoQuery} from 'rxdb';
 import {useRxQuery} from 'rxdb-hooks';
 
@@ -155,6 +162,24 @@ export default function RebuildTable({
             ))}
           </MultiSelect>
         </div>
+        <div className="flex sm:flex-row flex-col gap-2 2xl:ml-auto xl:justify-end">
+          <Button
+            className="rounded-tremor-default bg-tremor-brand text-center text-tremor-default font-medium text-tremor-brand-inverted shadow-tremor-input hover:bg-tremor-brand-emphasis dark:bg-dark-tremor-brand dark:text-dark-tremor-brand-inverted dark:shadow-dark-tremor-input dark:hover:bg-dark-tremor-brand-emphasis"
+            icon={RiRefreshLine}
+            onClick={() =>
+              toast.promise(
+                getRebuildPackages().then(data => db.rebuild_packages.bulkUpsert(data)),
+                {
+                  error: 'Failed to refresh packages',
+                  pending: 'Refreshing packages...',
+                  success: 'Packages list refreshed!',
+                }
+              )
+            }
+          >
+            Refresh Packages
+          </Button>
+        </div>
       </div>
       <div className="flex w-full mt-2">
         <TextInput
@@ -202,7 +227,7 @@ export default function RebuildTable({
                 <Badge color={getColor(pkg.status)}>{pkg.status}</Badge>
               </TableCell>
               <TableCell className="text-right">
-                {new Date(pkg.updated >> 6).toLocaleString()}
+                {new Date(pkg.updated / 1000000).toLocaleString()}
               </TableCell>
               <TableCell className="text-right">
                 <Link

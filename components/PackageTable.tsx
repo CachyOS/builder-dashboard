@@ -12,6 +12,7 @@ import {
   RiAddLine,
   RiArticleLine,
   RiRefreshLine,
+  RiRestartLine,
   RiSearchLine,
   RiSoundModuleFill,
 } from '@remixicon/react';
@@ -37,6 +38,8 @@ import {useRxQuery} from 'rxdb-hooks';
 
 import AddPackageModal from './AddPackageModal';
 import ConfirmRebuildModal from './ConfirmRebuildModal';
+import {getPackages} from '@/app/actions';
+import {toast} from 'react-toastify';
 
 export default function PackageTable({
   db,
@@ -173,13 +176,31 @@ export default function PackageTable({
             ))}
           </MultiSelect>
         </div>
-        <Button
-          className="rounded-tremor-default bg-tremor-brand text-center text-tremor-default font-medium text-tremor-brand-inverted shadow-tremor-input hover:bg-tremor-brand-emphasis dark:bg-dark-tremor-brand dark:text-dark-tremor-brand-inverted dark:shadow-dark-tremor-input dark:hover:bg-dark-tremor-brand-emphasis xl:ml-auto xl:justify-end"
-          icon={RiAddLine}
-          onClick={() => setModalOpen(true)}
-        >
-          Add Package
-        </Button>
+        <div className="flex sm:flex-row flex-col gap-2 2xl:ml-auto xl:justify-end">
+          <Button
+            className="rounded-tremor-default bg-tremor-brand text-center text-tremor-default font-medium text-tremor-brand-inverted shadow-tremor-input hover:bg-tremor-brand-emphasis dark:bg-dark-tremor-brand dark:text-dark-tremor-brand-inverted dark:shadow-dark-tremor-input dark:hover:bg-dark-tremor-brand-emphasis"
+            icon={RiRefreshLine}
+            onClick={() =>
+              toast.promise(
+                getPackages().then(data => db.packages.bulkUpsert(data)),
+                {
+                  error: 'Failed to refresh packages',
+                  pending: 'Refreshing packages...',
+                  success: 'Packages list refreshed!',
+                }
+              )
+            }
+          >
+            Refresh Packages
+          </Button>
+          <Button
+            className="rounded-tremor-default bg-tremor-brand text-center text-tremor-default font-medium text-tremor-brand-inverted shadow-tremor-input hover:bg-tremor-brand-emphasis dark:bg-dark-tremor-brand dark:text-dark-tremor-brand-inverted dark:shadow-dark-tremor-input dark:hover:bg-dark-tremor-brand-emphasis"
+            icon={RiAddLine}
+            onClick={() => setModalOpen(true)}
+          >
+            Add Package
+          </Button>
+        </div>
       </div>
       <div className="flex w-full mt-2">
         <TextInput
@@ -256,7 +277,7 @@ export default function PackageTable({
               <TableCell className="text-right">
                 <Button
                   className="text-dark-tremor-content-strong dark:text-tremor-content-strong dark:bg-white bg-black hover:bg-gray-700 dark:hover:bg-gray-200 text-right"
-                  icon={RiRefreshLine}
+                  icon={RiRestartLine}
                   onClick={() => setRebuildPackage(pkg)}
                 >
                   Rebuild
