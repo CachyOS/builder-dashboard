@@ -86,6 +86,9 @@ export default function Statistics({
   );
   useEffect(() => {
     const querySubscription = query.$.subscribe(packages => {
+      if (!packages.length) {
+        return;
+      }
       const id = toast.loading('Updating statistics...');
       handleStats(packages, computedStats => setStats(computedStats));
       toast.update(id, {
