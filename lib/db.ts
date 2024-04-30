@@ -77,9 +77,62 @@ const BuilderPackageSchema = toTypedRxJsonSchema({
   version: 0,
 });
 
+const BuilderRebuildPackageSchema = toTypedRxJsonSchema({
+  indexes: ['pkgbase', 'march', 'repository', 'status'],
+  keyCompression: true,
+  primaryKey: {
+    fields: ['pkgbase', 'repository', 'march'],
+    key: 'packageID',
+    separator: '-',
+  },
+  properties: {
+    march: {
+      enum: Object.values(BuilderPackageArchitecture),
+      maxLength: 10,
+      type: 'string',
+    },
+    packageID: {
+      maxLength: 640,
+      type: 'string',
+    },
+    pkgbase: {
+      maxLength: 256,
+      type: 'string',
+    },
+    repository: {
+      enum: Object.values(BuilderPackageRepository),
+      maxLength: 10,
+      type: 'string',
+    },
+    status: {
+      enum: Object.values(BuilderPackageStatus),
+      maxLength: 10,
+      type: 'string',
+    },
+    updated: {
+      type: 'number',
+    },
+  },
+  required: [
+    'march',
+    'packageID',
+    'pkgbase',
+    'repository',
+    'status',
+    'updated',
+  ],
+  title: 'rebuildPackages',
+  type: 'object',
+  version: 0,
+});
+
 export type BuilderPackageCollection = RxCollection<BuilderPackageWithID>;
+export type BuilderRebuildPackageCollection =
+  RxCollection<BuilderPackageWithID>;
 export type BuilderPackageDatabase = RxDatabase<{
   packages: BuilderPackageCollection;
+  // camelCase is not compatible with RxDB for database and collection names
+  rebuild_packages: BuilderRebuildPackageCollection;
 }>;
 
 export async function getRxDB() {
@@ -102,18 +155,10 @@ export async function getRxDB() {
     packages: {
       schema: BuilderPackageSchema,
     },
-  });
-  return db;
-}
-
-export async function searchPackages(pkg: string) {
-  const db = await getRxDB();
-  return db.packages.find({
-    selector: {
-      pkgname: {
-        $options: 'ig',
-        $regex: pkg,
-      },
+    // camelCase is not compatible with RxDB for database and collection names
+    rebuild_packages: {
+      schema: BuilderRebuildPackageSchema,
     },
   });
+  return db;
 }

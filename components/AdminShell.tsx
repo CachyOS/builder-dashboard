@@ -1,14 +1,25 @@
 'use client';
 
-import {getPackages, getUsername} from '@/app/actions';
+import {getPackages, getRebuildPackages, getUsername} from '@/app/actions';
 import {BuilderPackageDatabase, getRxDB} from '@/lib/db';
-import {Card, Select, SelectItem, Tab, TabGroup, TabList} from '@tremor/react';
+import {
+  Card,
+  Select,
+  SelectItem,
+  Tab,
+  TabGroup,
+  TabList,
+  TabPanel,
+  TabPanels,
+} from '@tremor/react';
 import {useEffect, useState} from 'react';
 import {toast} from 'react-toastify';
 
 import KPICards from './KPICards';
 import Loader from './Loader';
 import PackageTable from './PackageTable';
+import RebuildTable from './RebuildTable';
+import Statistics from './Statistics';
 
 export default function AdminShell() {
   const [name, setName] = useState('');
@@ -17,6 +28,14 @@ export default function AdminShell() {
     {
       text: 'Package List',
       value: '0',
+    },
+    {
+      text: 'Rebuild Queue',
+      value: '1',
+    },
+    {
+      text: 'Statistics',
+      value: '2',
     },
   ];
   const [db, setDb] = useState<BuilderPackageDatabase>();
@@ -30,7 +49,14 @@ export default function AdminShell() {
           setDb(x);
           return x;
         })
-        .then(x => getPackages().then(data => x.packages.bulkUpsert(data))),
+        .then(x =>
+          Promise.all([
+            getPackages().then(data => x.packages.bulkUpsert(data)),
+            getRebuildPackages().then(data =>
+              x.rebuild_packages.bulkUpsert(data)
+            ),
+          ])
+        ),
       {
         error: 'Failed to load packages',
         pending: 'Loading packages...',
@@ -63,23 +89,12 @@ export default function AdminShell() {
         </div>
       </div>
       <KPICards db={db} />
-      <div className="hidden sm:block">
-        <TabGroup
-          index={parseInt(selectedTab, 10)}
-          onIndexChange={index => setSelectedTab(index.toString())}
-        >
-          <TabList className="mt-4">
-            {list.map(({text, value}) => (
-              <Tab key={value} value={value}>
-                {text}
-              </Tab>
-            ))}
-          </TabList>
-        </TabGroup>
-      </div>
-      <div className="sm:hidden">
+      <TabGroup
+        index={parseInt(selectedTab, 10)}
+        onIndexChange={index => setSelectedTab(index.toString())}
+      >
         <Select
-          className="mt-6 max-w-full"
+          className="mt-6 max-w-full sm:hidden"
           onValueChange={value => setSelectedTab(value)}
           value={selectedTab}
         >
@@ -89,8 +104,29 @@ export default function AdminShell() {
             </SelectItem>
           ))}
         </Select>
-      </div>
-      <PackageTable db={db} />
+        <TabList className="mt-4 hidden sm:flex">
+          {list.map(({text, value}) => (
+            <Tab
+              key={value}
+              value={value}
+              className="text-tremor-default dark:text-dark-tremor-default ui-selected:dark:text-dark-tremor-brand ui-selected:text-tremor-brand"
+            >
+              {text}
+            </Tab>
+          ))}
+        </TabList>
+        <TabPanels>
+          <TabPanel>
+            <PackageTable db={db} />
+          </TabPanel>
+          <TabPanel>
+            <RebuildTable db={db} />
+          </TabPanel>
+          <TabPanel>
+            <Statistics db={db} />
+          </TabPanel>
+        </TabPanels>
+      </TabGroup>
     </Card>
   );
 }

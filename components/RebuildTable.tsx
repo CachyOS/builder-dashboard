@@ -6,15 +6,9 @@ import {
   BuilderPackageArchitecture,
   BuilderPackageRepository,
   BuilderPackageStatus,
-  BuilderPackageWithID,
+  BuilderRebuildPackageWithID,
 } from '@/types/BuilderPackage';
-import {
-  RiAddLine,
-  RiArticleLine,
-  RiRefreshLine,
-  RiSearchLine,
-  RiSoundModuleFill,
-} from '@remixicon/react';
+import {RiArticleLine, RiSearchLine, RiSoundModuleFill} from '@remixicon/react';
 import {
   Badge,
   Button,
@@ -35,23 +29,21 @@ import {useMemo, useState} from 'react';
 import {MangoQuery} from 'rxdb';
 import {useRxQuery} from 'rxdb-hooks';
 
-import AddPackageModal from './AddPackageModal';
-import ConfirmRebuildModal from './ConfirmRebuildModal';
-
-export default function PackageTable({
+export default function RebuildTable({
   db,
 }: Readonly<{db: BuilderPackageDatabase}>) {
-  const [modalOpen, setModalOpen] = useState(false);
-  const [rebuildPackage, setRebuildPackage] = useState<BuilderPackageWithID>();
   const [pkgQuery, setPkgQuery] = useState('');
   const [selectedBuildStatus, setSelectedBuildStatus] = useState<string[]>([]);
   const [selectedRepositories, setSelectedRepositories] = useState<string[]>(
     []
   );
   const [selectedMarch, setSelectedMarch] = useState<string[]>([]);
-  const packageCollection = useMemo(() => db.collections.packages, [db]);
+  const packageCollection = useMemo(
+    () => db.collections.rebuild_packages,
+    [db]
+  );
   const query = useMemo(() => {
-    const searchQuery: MangoQuery<BuilderPackageWithID> = {
+    const searchQuery: MangoQuery<BuilderRebuildPackageWithID> = {
       selector: {
         ...(selectedBuildStatus.length
           ? {
@@ -62,7 +54,7 @@ export default function PackageTable({
           : {}),
         ...(pkgQuery.trim().length
           ? {
-              pkgname: {
+              pkgbase: {
                 $options: 'ig',
                 $regex: pkgQuery.trim(),
               },
@@ -105,16 +97,6 @@ export default function PackageTable({
   });
   return (
     <Card className="p-4 mt-6 h-full flex flex-col gap-2">
-      <AddPackageModal isOpen={modalOpen} onClose={() => setModalOpen(false)} />
-      {rebuildPackage ? (
-        <ConfirmRebuildModal
-          isOpen={!!rebuildPackage}
-          onClose={() => setRebuildPackage(undefined)}
-          pkg={rebuildPackage}
-        />
-      ) : (
-        <></>
-      )}
       <div className="mt-4 flex flex-col sm:flex-row sm:justify-start md:gap-8 gap-4 flex-wrap">
         <div className="max-w-full sm:max-w-xs flex w-full">
           <MultiSelect
@@ -173,13 +155,6 @@ export default function PackageTable({
             ))}
           </MultiSelect>
         </div>
-        <Button
-          className="rounded-tremor-default bg-tremor-brand text-center text-tremor-default font-medium text-tremor-brand-inverted shadow-tremor-input hover:bg-tremor-brand-emphasis dark:bg-dark-tremor-brand dark:text-dark-tremor-brand-inverted dark:shadow-dark-tremor-input dark:hover:bg-dark-tremor-brand-emphasis xl:ml-auto xl:justify-end"
-          icon={RiAddLine}
-          onClick={() => setModalOpen(true)}
-        >
-          Add Package
-        </Button>
       </div>
       <div className="flex w-full mt-2">
         <TextInput
@@ -198,13 +173,10 @@ export default function PackageTable({
         <TableHead>
           <TableRow className="border-b border-tremor-border dark:border-dark-tremor-border">
             <TableHeaderCell className="text-tremor-content-strong dark:text-dark-tremor-content-strong">
-              Name
+              Base
             </TableHeaderCell>
             <TableHeaderCell className="text-tremor-content-strong dark:text-dark-tremor-content-strong">
               Arch
-            </TableHeaderCell>
-            <TableHeaderCell className="text-tremor-content-strong dark:text-dark-tremor-content-strong">
-              Version
             </TableHeaderCell>
             <TableHeaderCell className="text-tremor-content-strong dark:text-dark-tremor-content-strong">
               Repository
@@ -218,25 +190,19 @@ export default function PackageTable({
             <TableHeaderCell className="text-tremor-content-strong dark:text-dark-tremor-content-strong text-right">
               Build Log
             </TableHeaderCell>
-            <TableHeaderCell className="text-tremor-content-strong dark:text-dark-tremor-content-strong text-right">
-              Rebuild
-            </TableHeaderCell>
           </TableRow>
         </TableHead>
         <TableBody>
           {packages.map(pkg => (
             <TableRow key={pkg.packageID}>
-              <TableCell>
-                {pkg.pkgname} ({pkg.pkgbase})
-              </TableCell>
+              <TableCell>{pkg.pkgbase}</TableCell>
               <TableCell>{pkg.march}</TableCell>
-              <TableCell>{pkg.version}</TableCell>
               <TableCell>{pkg.repository}</TableCell>
               <TableCell>
                 <Badge color={getColor(pkg.status)}>{pkg.status}</Badge>
               </TableCell>
               <TableCell className="text-right">
-                {new Date(pkg.updated * 1000).toLocaleString()}
+                {new Date(pkg.updated >> 6).toLocaleString()}
               </TableCell>
               <TableCell className="text-right">
                 <Link
@@ -252,15 +218,6 @@ export default function PackageTable({
                     View
                   </Button>
                 </Link>
-              </TableCell>
-              <TableCell className="text-right">
-                <Button
-                  className="text-dark-tremor-content-strong dark:text-tremor-content-strong dark:bg-white bg-black hover:bg-gray-700 dark:hover:bg-gray-200 text-right"
-                  icon={RiRefreshLine}
-                  onClick={() => setRebuildPackage(pkg)}
-                >
-                  Rebuild
-                </Button>
               </TableCell>
             </TableRow>
           ))}

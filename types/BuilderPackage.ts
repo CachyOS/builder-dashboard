@@ -29,7 +29,7 @@ export interface BuilderPackage {
   version: string;
 }
 
-export interface BuilderRBPackage {
+export interface BuilderRebuildPackage {
   status: BuilderPackageStatus;
   updated: number;
   march: BuilderPackageArchitecture;
@@ -38,5 +38,9 @@ export interface BuilderRBPackage {
 }
 
 export interface BuilderPackageWithID extends BuilderPackage {
+  packageID: string;
+}
+
+export interface BuilderRebuildPackageWithID extends BuilderRebuildPackage {
   packageID: string;
 }

@@ -39,13 +39,14 @@ export default function ConfirmRebuildModal({
           Are you sure you want to rebuild {pkg.pkgname} ({pkg.pkgbase}) (
           {pkg.march})?
         </p>
-        <input name="pkgname" type="hidden" value={pkg.pkgname} />
+        <input name="pkgbase" type="hidden" value={pkg.pkgbase} />
         <input name="march" type="hidden" value={pkg.march} />
+        <input name="repository" type="hidden" value={pkg.repository} />
         <div className="flex flex-col gap-2 mt-4">
           <Button color="red" onClick={onClose} type="button">
             Cancel
           </Button>
-          <SubmitButton className="w-full" disabled text="Rebuild package" />
+          <SubmitButton className="w-full" text="Rebuild package" />
         </div>
       </form>
     </Modal>

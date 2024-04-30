@@ -4,7 +4,7 @@ import fetcher from '@/lib/fetcher';
 import {SessionData, defaultSession, sessionOptions} from '@/lib/session';
 import {
   BuilderPackage,
-  BuilderRBPackage,
+  BuilderRebuildPackage,
   BuilderPackageArchitecture,
   BuilderPackageRepository,
 } from '@/types/BuilderPackage';
@@ -75,31 +75,23 @@ export async function getPackages() {
   if (!session.isLoggedIn) {
     return redirect('/');
   }
-  const res = await fetcher<BuilderPackage[]>(
+  return fetcher<BuilderPackage[]>(
     '/v1/packages',
     session.token,
     headers()
-  ).catch(() => {});
-  if (!res || !Array.isArray(res)) {
-    return [];
-  }
-  return res;
+  ).catch(() => []);
 }
 
-export async function getRBPackages() {
+export async function getRebuildPackages() {
   const session = await getSession();
   if (!session.isLoggedIn) {
     return redirect('/');
   }
-  const res = await fetcher<BuilderRBPackage[]>(
+  return fetcher<BuilderRebuildPackage[]>(
     '/v1/rebuild-status',
     session.token,
     headers()
-  ).catch(() => {});
-  if (!res || !Array.isArray(res)) {
-    return [];
-  }
-  return res;
+  ).catch(() => []);
 }
 
 export async function getPackageLog(
@@ -182,15 +174,15 @@ export async function rebuildPackage(_: any, formData: FormData) {
   ) {
     return redirect('/dashboard');
   }
-  const res = await fetcher<{success: boolean}>(
-    `${process.env.CACHY_BUILDER_API_BASE_URL}/v1/rebuild/${march}/${repository}/${pkgbase}`,
+  const res = await fetcher<{track_id: string}>(
+    `/v1/rebuild/${march}/${repository}/${pkgbase}`,
     session.token,
     headers(),
     {
       method: 'PUT',
     }
   ).catch(() => {});
-  if (!res?.success) {
+  if (!res?.track_id) {
     return {
       success: false,
     };
