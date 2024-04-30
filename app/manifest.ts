@@ -3,8 +3,7 @@ import {MetadataRoute} from 'next';
 export default function manifest(): MetadataRoute.Manifest {
   return {
     background_color: '#ffffff',
-    description:
-      'GU Fest 2024 - Fests at Gandhinagar University are a platform for students to learn and showcase their talents to self and the world',
+    description: 'CachyOS Builder Dashboard',
     display: 'standalone',
     icons: [
       {
@@ -13,8 +12,8 @@ export default function manifest(): MetadataRoute.Manifest {
         type: 'image/x-icon',
       },
     ],
-    name: 'GU Fest 2024',
-    short_name: 'GU Fest 2024',
+    name: 'CachyOS Builder Dashboard',
+    short_name: 'CachyOS Builder Dashboard',
     start_url: '/',
     theme_color: '#3b82f6',
   };
