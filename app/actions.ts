@@ -4,7 +4,9 @@ import fetcher from '@/lib/fetcher';
 import {SessionData, defaultSession, sessionOptions} from '@/lib/session';
 import {
   BuilderPackage,
+  BuilderRebuildPackage,
   BuilderPackageArchitecture,
+  BuilderPackageRepository,
 } from '@/types/BuilderPackage';
 import {getIronSession} from 'iron-session';
 import {cookies, headers} from 'next/headers';
@@ -73,15 +75,23 @@ export async function getPackages() {
   if (!session.isLoggedIn) {
     return redirect('/');
   }
-  const res = await fetcher<BuilderPackage[]>(
+  return fetcher<BuilderPackage[]>(
     '/v1/packages',
     session.token,
     headers()
-  ).catch(() => {});
-  if (!res || !Array.isArray(res)) {
-    return [];
+  ).catch(() => []);
+}
+
+export async function getRebuildPackages() {
+  const session = await getSession();
+  if (!session.isLoggedIn) {
+    return redirect('/');
   }
-  return res;
+  return fetcher<BuilderRebuildPackage[]>(
+    '/v1/rebuild-status',
+    session.token,
+    headers()
+  ).catch(() => []);
 }
 
 export async function getPackageLog(
@@ -148,30 +158,31 @@ export async function addPackage(_: any, formData: FormData) {
 
 export async function rebuildPackage(_: any, formData: FormData) {
   const session = await getSession();
-  const pkgname = formData.get('pkgname')?.toString().trim() ?? '';
   const march = formData.get('march')?.toString().trim() ?? '';
+  const repository = formData.get('repository')?.toString().trim() ?? '';
+  const pkgbase = formData.get('pkgbase')?.toString().trim() ?? '';
   if (
-    !pkgname ||
     !march ||
+    !repository ||
+    !pkgbase ||
     !Object.values(BuilderPackageArchitecture).includes(
       march as BuilderPackageArchitecture
+    ) ||
+    !Object.values(BuilderPackageRepository).includes(
+      repository as BuilderPackageRepository
     )
   ) {
     return redirect('/dashboard');
   }
-  const res = await fetcher<{success: boolean}>(
-    `${process.env.CACHY_BUILDER_API_BASE_URL}/v1/packages`,
+  const res = await fetcher<{track_id: string}>(
+    `/v1/rebuild/${march}/${repository}/${pkgbase}`,
     session.token,
     headers(),
     {
-      body: JSON.stringify({
-        march,
-        pkgname,
-      }),
       method: 'PUT',
     }
   ).catch(() => {});
-  if (!res?.success) {
+  if (!res?.track_id) {
     return {
       success: false,
     };
