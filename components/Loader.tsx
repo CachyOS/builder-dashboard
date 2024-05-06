@@ -8,6 +8,7 @@ export default function Loader() {
       height={128}
       src="/logo.png"
       width={128}
+      priority
     />
   );
 }
