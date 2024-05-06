@@ -3,7 +3,7 @@ import {BuilderPackageArchitecture} from '@/types/BuilderPackage';
 import {NextRequest, NextResponse} from 'next/server';
 
 export async function GET(
-  _: NextRequest,
+  req: NextRequest,
   context: {
     params: {
       march: BuilderPackageArchitecture;
@@ -18,7 +18,7 @@ export async function GET(
   if (!Object.values(BuilderPackageArchitecture).includes(march)) {
     return new NextResponse('Not found', {status: 404});
   }
-  const log = await getPackageLog(pkgbase, march);
+  const log = await getPackageLog(pkgbase, march, req.nextUrl.pathname);
   return new NextResponse(log, {
     headers: {
       'Content-Type': 'text/plain',

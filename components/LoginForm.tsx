@@ -4,6 +4,7 @@ import {login} from '@/app/actions';
 import {Turnstile} from '@marsidev/react-turnstile';
 import {TextInput} from '@tremor/react';
 import Image from 'next/image';
+import {redirect, useSearchParams} from 'next/navigation';
 import {useFormState} from 'react-dom';
 
 import SubmitButton from './SubmitButton';
@@ -14,8 +15,16 @@ const initialState = {
   errorUsername: '',
 };
 
-export default function LoginForm() {
+export default function LoginForm({loggedIn}: Readonly<{loggedIn?: boolean}>) {
   const [state, formAction] = useFormState(login, initialState);
+  const query = useSearchParams();
+  const redirectTo = query.get('redirect');
+  if (loggedIn) {
+    if (redirectTo?.startsWith('/')) {
+      return redirect(redirectTo);
+    }
+    return redirect('/dashboard');
+  }
   return (
     <div className="flex min-h-full flex-1 flex-col justify-center px-4 py-10 lg:px-6">
       <div className="sm:mx-auto sm:w-full sm:max-w-sm">
@@ -74,6 +83,9 @@ export default function LoginForm() {
             options={{theme: 'auto', appearance: 'always'}}
             siteKey={process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY!}
           />
+          {redirectTo ? (
+            <input type="hidden" name="redirect" value={redirectTo} />
+          ) : null}
           <SubmitButton text="Sign in" />
         </form>
         <p className="mt-2 text-red-500 text-center">

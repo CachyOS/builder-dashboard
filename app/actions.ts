@@ -28,6 +28,7 @@ export async function getSession() {
 export async function logout() {
   const session = await getSession();
   session.destroy();
+  return redirect('/');
 }
 
 export async function login(_: any, formData: FormData) {
@@ -35,6 +36,7 @@ export async function login(_: any, formData: FormData) {
   const token = formData.get('cf-turnstile-response')?.toString() ?? '';
   const username = formData.get('username')?.toString().trim() ?? '';
   const password = formData.get('password')?.toString() ?? '';
+  const redirectTo = formData.get('redirect')?.toString() ?? '';
 
   if (!token) {
     return {
@@ -92,6 +94,9 @@ export async function login(_: any, formData: FormData) {
   session.createdAt = Date.now();
   session.username = username;
   await session.save();
+  if (redirectTo?.startsWith('/')) {
+    return redirect(redirectTo);
+  }
   return redirect('/dashboard');
 }
 
@@ -129,10 +134,14 @@ export async function getRebuildPackages() {
 
 export async function getPackageLog(
   pkg: string,
-  march: BuilderPackageArchitecture
+  march: BuilderPackageArchitecture,
+  redirectTo?: string
 ) {
   const session = await getSession();
   if (!session.isLoggedIn) {
+    if (redirectTo?.startsWith('/')) {
+      return redirect(`/?redirect=${encodeURIComponent(redirectTo)}`);
+    }
     return redirect('/');
   }
   return fetcher<string>(

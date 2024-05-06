@@ -1,8 +1,16 @@
 'use client';
 
-import {getPackages, getRebuildPackages, getUsername} from '@/app/actions';
-import {BuilderPackageDatabase, getRxDB} from '@/lib/db';
 import {
+  getPackages,
+  getRebuildPackages,
+  getUsername,
+  logout,
+} from '@/app/actions';
+import {BuilderPackageDatabase, getRxDB} from '@/lib/db';
+import {BuilderPackageStatus} from '@/types/BuilderPackage';
+import {RiLogoutBoxLine} from '@remixicon/react';
+import {
+  Button,
   Card,
   Select,
   SelectItem,
@@ -20,7 +28,6 @@ import Loader from './Loader';
 import PackageTable from './PackageTable';
 import RebuildTable from './RebuildTable';
 import Statistics from './Statistics';
-import {BuilderPackageStatus} from '@/types/BuilderPackage';
 
 const list = [
   {
@@ -71,7 +78,7 @@ export default function AdminShell() {
     return (
       <div className="flex flex-col gap-2 w-full justify-center items-center min-h-screen">
         <Loader />
-        <p className="text-tremor-content-strong dark:text-dark-tremor-content-strong">
+        <p className="text-tremor-content-strong dark:text-dark-tremor-content-strong text-center">
           Loading the CachyOS Builder dashboard, please wait...
         </p>
       </div>
@@ -80,15 +87,27 @@ export default function AdminShell() {
   return (
     <Card className="p-4 h-full flex flex-col min-h-screen gap-2">
       <div className="sm:flex sm:items-center sm:justify-between sm:space-x-10">
-        <div>
-          <div className="flex flex-row gap-4">
-            <h3 className="font-semibold text-tremor-content-strong dark:text-dark-tremor-content-strong">
-              CachyOS Builder Dashboard
-            </h3>
+        <div className="flex flex-col w-full">
+          <div className="flex flex-row gap-4 w-full">
+            <div className="w-full">
+              <h3 className="font-semibold text-tremor-content-strong dark:text-dark-tremor-content-strong">
+                CachyOS Builder Dashboard
+              </h3>
+            </div>
+            <div className="justify-end sm:hidden">
+              <Button size="xs" icon={RiLogoutBoxLine} onClick={() => logout()}>
+                Logout
+              </Button>
+            </div>
           </div>
           <p className="mt-1 text-tremor-default leading-6 text-tremor-content dark:text-dark-tremor-content">
             Hello {name}, welcome to the CachyOS builder dashboard!
           </p>
+        </div>
+        <div className="justify-end sm:inline hidden">
+          <Button icon={RiLogoutBoxLine} onClick={() => logout()}>
+            Logout
+          </Button>
         </div>
       </div>
       <KPICards db={db} handleClick={type => setFilterStatus(type)} />
