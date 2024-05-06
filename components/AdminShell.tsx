@@ -7,6 +7,7 @@ import {
   logout,
 } from '@/app/actions';
 import {BuilderPackageDatabase, getRxDB} from '@/lib/db';
+import {useLogoutShortcutListener} from '@/lib/hooks';
 import {BuilderPackageStatus} from '@/types/BuilderPackage';
 import {RiLogoutBoxLine} from '@remixicon/react';
 import {
@@ -49,6 +50,7 @@ export default function AdminShell() {
   const [selectedTab, setSelectedTab] = useState('0');
   const [filterStatus, setFilterStatus] = useState<BuilderPackageStatus>();
   const [db, setDb] = useState<BuilderPackageDatabase>();
+  useLogoutShortcutListener(() => logout());
   useEffect(() => {
     getUsername().then(x => setName(x));
   }, []);
