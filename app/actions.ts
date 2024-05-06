@@ -103,24 +103,15 @@ export async function getPackageLog(
   if (!session.isLoggedIn) {
     return redirect('/');
   }
-  const clientHeaders = headers();
-  return fetch(
-    `${process.env.CACHY_BUILDER_API_BASE_URL}/v1/logs/${march}/${pkg}.log`,
+  return fetcher<string>(
+    `/v1/logs/${march}/${pkg}.log`,
+    session.token,
+    headers(),
     {
-      headers: {
-        Authorization: `Bearer ${session.token}`,
-        'User-Agent':
-          clientHeaders.get('User-Agent') ??
-          'CachyBuilderDashboardProxyServer/1.0.0',
-        'X-Forwarded-For':
-          clientHeaders.get('CF-Connecting-IP') ??
-          clientHeaders.get('X-Forwarded-For') ??
-          '',
-      },
       method: 'GET',
-    }
+    },
+    'text'
   )
-    .then(res => res.text())
     .then(text => stripAnsi(text))
     .catch(() => '');
 }
@@ -135,7 +126,7 @@ export async function addPackage(_: any, formData: FormData) {
     };
   }
   const res = await fetcher<{success: boolean}>(
-    `${process.env.CACHY_BUILDER_API_BASE_URL}/v1/packages`,
+    '/v1/packages',
     session.token,
     headers(),
     {

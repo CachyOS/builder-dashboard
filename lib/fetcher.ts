@@ -4,7 +4,8 @@ export default async function fetcher<T>(
   path: string,
   sessionToken: string,
   clientHeaders: ReadonlyHeaders,
-  init?: RequestInit
+  init?: RequestInit,
+  responseMode: 'json' | 'text' = 'json'
 ): Promise<T> {
   return fetch(`${process.env.CACHY_BUILDER_API_BASE_URL}${path}`, {
     cache: 'no-store',
@@ -21,5 +22,9 @@ export default async function fetcher<T>(
       ...init?.headers,
     },
     ...init,
-  }).then(res => res.json() as Promise<T>);
+  }).then(res =>
+    responseMode === 'json'
+      ? (res.json() as Promise<T>)
+      : (res.text() as Promise<T>)
+  );
 }
