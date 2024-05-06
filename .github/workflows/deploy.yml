@@ -25,7 +25,7 @@ jobs:
           NEXT_PUBLIC_TURNSTILE_SITE_KEY: ${{ secrets.NEXT_PUBLIC_TURNSTILE_SITE_KEY }}
           TARGET_NEXT_PUBLIC_TURNSTILE_SITE_KEY: production
           TYPE_NEXT_PUBLIC_TURNSTILE_SITE_KEY: plain
-          TURNSTILE_SECRET_KEY: ${{ secrets.CACHY_BUILDER_API_BASE_URL }}
+          TURNSTILE_SECRET_KEY: ${{ secrets.TURNSTILE_SECRET_KEY }}
           TARGET_TURNSTILE_SECRET_KEY: production
           TYPE_TURNSTILE_SECRET_KEY: encrypted
       - uses: amondnet/vercel-action@v25
