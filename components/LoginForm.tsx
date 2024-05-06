@@ -1,5 +1,7 @@
 'use client';
+
 import {login} from '@/app/actions';
+import {Turnstile} from '@marsidev/react-turnstile';
 import {TextInput} from '@tremor/react';
 import Image from 'next/image';
 import {useFormState} from 'react-dom';
@@ -66,6 +68,11 @@ export default function LoginForm() {
             placeholder="********"
             required
             type="password"
+          />
+          <Turnstile
+            className="mt-2 outline-none ring-0"
+            options={{theme: 'auto', appearance: 'always'}}
+            siteKey={process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY!}
           />
           <SubmitButton text="Sign in" />
         </form>

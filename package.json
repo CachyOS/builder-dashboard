@@ -2,6 +2,7 @@
   "dependencies": {
     "@headlessui/react": "1.7.19",
     "@headlessui/tailwindcss": "0.2.0",
+    "@marsidev/react-turnstile": "0.6.0",
     "@radix-ui/react-checkbox": "1.0.4",
     "@remixicon/react": "4.2.0",
     "@tremor/react": "3.16.2",

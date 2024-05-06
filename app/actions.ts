@@ -32,8 +32,18 @@ export async function logout() {
 
 export async function login(_: any, formData: FormData) {
   const session = await getSession();
+  const token = formData.get('cf-turnstile-response')?.toString() ?? '';
   const username = formData.get('username')?.toString().trim() ?? '';
   const password = formData.get('password')?.toString() ?? '';
+
+  if (!token) {
+    return {
+      errorCredentials: 'CF Turnstile verification failed. Please try again.',
+      errorPassword: '',
+      errorUsername: '',
+    };
+  }
+
   if (!username || !password) {
     return {
       errorCredentials: 'Missing username or password.',
@@ -41,6 +51,28 @@ export async function login(_: any, formData: FormData) {
       errorUsername: 'Username is required.',
     };
   }
+
+  const turnstileResponse = await fetch(
+    'https://challenges.cloudflare.com/turnstile/v0/siteverify',
+    {
+      method: 'POST',
+      body: `secret=${encodeURIComponent(process.env.TURNSTILE_SECRET_KEY!)}&response=${encodeURIComponent(token)}`,
+      headers: {
+        'content-type': 'application/x-www-form-urlencoded',
+      },
+    }
+  )
+    .then(res => res.json())
+    .then(res => res.success)
+    .catch(() => false);
+  if (!turnstileResponse) {
+    return {
+      errorCredentials: 'CF Turnstile verification failed. Please try again.',
+      errorPassword: '',
+      errorUsername: '',
+    };
+  }
+
   const res = await fetcher<{token: string}>('/v1/login', '', headers(), {
     body: JSON.stringify({
       password,
