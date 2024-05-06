@@ -18,23 +18,25 @@ export enum BuilderPackageArchitecture {
   x86_64_v4 = 'x86-64-v4',
 }
 
-export interface BuilderPackage {
+export interface BaseBuilderPackage {
   march: BuilderPackageArchitecture;
   pkgbase: string;
-  pkgname: string;
-  repo_version: string;
   repository: BuilderPackageRepository;
+}
+
+export interface BaseBuilderPackageWithName extends BaseBuilderPackage {
+  pkgname: string;
+}
+export interface BuilderPackage extends BaseBuilderPackageWithName {
+  repo_version: string;
   status: BuilderPackageStatus;
   updated: number;
   version: string;
 }
 
-export interface BuilderRebuildPackage {
+export interface BuilderRebuildPackage extends BaseBuilderPackage {
   status: BuilderPackageStatus;
   updated: number;
-  march: BuilderPackageArchitecture;
-  repository: BuilderPackageRepository;
-  pkgbase: string;
 }
 
 export interface BuilderPackageWithID extends BuilderPackage {

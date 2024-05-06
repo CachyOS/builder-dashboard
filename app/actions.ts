@@ -7,6 +7,7 @@ import {
   BuilderRebuildPackage,
   BuilderPackageArchitecture,
   BuilderPackageRepository,
+  BaseBuilderPackage,
 } from '@/types/BuilderPackage';
 import {getIronSession} from 'iron-session';
 import {cookies, headers} from 'next/headers';
@@ -189,5 +190,29 @@ export async function rebuildPackage(_: any, formData: FormData) {
   }
   return {
     success: true,
+  };
+}
+
+export async function bulkRebuildPackages(
+  packages: BaseBuilderPackage[],
+  _: any
+) {
+  const session = await getSession();
+  if (!Array.isArray(packages) || !packages.length) {
+    return {
+      success: false,
+    };
+  }
+  const res = await fetcher<string[]>(
+    '/v1/bulk-rebuild',
+    session.token,
+    headers(),
+    {
+      method: 'PUT',
+      body: JSON.stringify(packages),
+    }
+  ).catch(() => []);
+  return {
+    success: !!res.length,
   };
 }

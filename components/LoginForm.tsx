@@ -69,7 +69,9 @@ export default function LoginForm() {
           />
           <SubmitButton text="Sign in" />
         </form>
-        <p className="mt-2 text-red-500 text-center">{state.errorCredentials}</p>
+        <p className="mt-2 text-red-500 text-center">
+          {state.errorCredentials}
+        </p>
         <p className="mt-4 text-tremor-label text-tremor-content dark:text-dark-tremor-content">
           By signing in, you agree to data processing and privacy policy. Your
           ip address and user agent will be stored for security purposes.

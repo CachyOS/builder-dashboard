@@ -1,15 +1,20 @@
 'use client';
 
+import {getPackages} from '@/app/actions';
 import {BuilderPackageDatabase} from '@/lib/db';
 import {getColor} from '@/lib/util';
 import {
+  BaseBuilderPackageWithName,
   BuilderPackageArchitecture,
   BuilderPackageRepository,
   BuilderPackageStatus,
   BuilderPackageWithID,
 } from '@/types/BuilderPackage';
+import {Menu, Transition} from '@headlessui/react';
+import {CheckedState} from '@radix-ui/react-checkbox';
 import {
   RiAddLine,
+  RiArrowDownSLine,
   RiArticleLine,
   RiRefreshLine,
   RiRestartLine,
@@ -32,19 +37,29 @@ import {
   TextInput,
 } from '@tremor/react';
 import Link from 'next/link';
-import {useMemo, useState} from 'react';
+import {Fragment, useEffect, useMemo, useState} from 'react';
+import {toast} from 'react-toastify';
 import {MangoQuery} from 'rxdb';
 import {useRxQuery} from 'rxdb-hooks';
 
 import AddPackageModal from './AddPackageModal';
+import Checkbox from './Checkbox';
+import ConfirmBulkRebuildModal from './ConfirmBulkRebuildModal';
 import ConfirmRebuildModal from './ConfirmRebuildModal';
-import {getPackages} from '@/app/actions';
-import {toast} from 'react-toastify';
 
 export default function PackageTable({
   db,
-}: Readonly<{db: BuilderPackageDatabase}>) {
-  const [modalOpen, setModalOpen] = useState(false);
+  filterStatus,
+}: Readonly<{
+  db: BuilderPackageDatabase;
+  filterStatus?: BuilderPackageStatus;
+}>) {
+  const [selectedPackages, setSelectedPackages] = useState<
+    BaseBuilderPackageWithName[]
+  >([]);
+  const [checked, setChecked] = useState<CheckedState>(false);
+  const [addPkgModalOpen, setAddPkgModalOpen] = useState(false);
+  const [bulkRebuildModalOpen, setBulkRebuildModalOpen] = useState(false);
   const [rebuildPackage, setRebuildPackage] = useState<BuilderPackageWithID>();
   const [pkgQuery, setPkgQuery] = useState('');
   const [selectedBuildStatus, setSelectedBuildStatus] = useState<string[]>([]);
@@ -52,39 +67,59 @@ export default function PackageTable({
     []
   );
   const [selectedMarch, setSelectedMarch] = useState<string[]>([]);
+  useEffect(() => {
+    if (filterStatus) {
+      setSelectedBuildStatus([filterStatus]);
+    }
+  }, [filterStatus]);
   const packageCollection = useMemo(() => db.collections.packages, [db]);
   const query = useMemo(() => {
     const searchQuery: MangoQuery<BuilderPackageWithID> = {
       selector: {
-        ...(selectedBuildStatus.length
-          ? {
-              status: {
-                $in: selectedBuildStatus,
-              },
-            }
-          : {}),
-        ...(pkgQuery.trim().length
-          ? {
-              pkgname: {
-                $options: 'ig',
-                $regex: pkgQuery.trim(),
-              },
-            }
-          : {}),
-        ...(selectedRepositories.length
-          ? {
-              repository: {
-                $in: selectedRepositories,
-              },
-            }
-          : {}),
-        ...(selectedMarch.length
-          ? {
-              march: {
-                $in: selectedMarch,
-              },
-            }
-          : {}),
+        $or: [
+          {
+            ...(selectedBuildStatus.length
+              ? {
+                  status: {
+                    $in: selectedBuildStatus,
+                  },
+                }
+              : {}),
+            ...(pkgQuery.trim().length
+              ? {
+                  pkgname: {
+                    $options: 'ig',
+                    $regex: pkgQuery.trim(),
+                  },
+                }
+              : {}),
+            ...(selectedRepositories.length
+              ? {
+                  repository: {
+                    $in: selectedRepositories,
+                  },
+                }
+              : {}),
+            ...(selectedMarch.length
+              ? {
+                  march: {
+                    $in: selectedMarch,
+                  },
+                }
+              : {}),
+          },
+          ...(selectedPackages.length
+            ? [
+                {
+                  $or: selectedPackages.map(pkg => ({
+                    pkgbase: pkg.pkgbase,
+                    march: pkg.march,
+                    repository: pkg.repository,
+                  })),
+                },
+              ]
+            : []),
+        ],
       },
     };
     return packageCollection.find(searchQuery).sort({
@@ -106,23 +141,52 @@ export default function PackageTable({
     pageSize: 10,
     pagination: 'Traditional',
   });
+  useEffect(() => {
+    if (selectedPackages.length === 0) {
+      setChecked(false);
+    } else if (
+      packages.filter(pkg =>
+        selectedPackages.some(
+          x => x.pkgbase === pkg.pkgbase && x.march === pkg.march
+        )
+      ).length === packages.length
+    ) {
+      setChecked(true);
+    } else {
+      setChecked('indeterminate');
+    }
+  }, [packages, selectedPackages]);
   return (
     <Card className="p-4 mt-6 h-full flex flex-col gap-2">
-      <AddPackageModal isOpen={modalOpen} onClose={() => setModalOpen(false)} />
+      {bulkRebuildModalOpen ? (
+        <ConfirmBulkRebuildModal
+          isOpen={bulkRebuildModalOpen}
+          onClose={() => {
+            setBulkRebuildModalOpen(false);
+            setSelectedPackages([]);
+          }}
+          packages={selectedPackages}
+        />
+      ) : null}
+      {addPkgModalOpen ? (
+        <AddPackageModal
+          isOpen={addPkgModalOpen}
+          onClose={() => setAddPkgModalOpen(false)}
+        />
+      ) : null}
       {rebuildPackage ? (
         <ConfirmRebuildModal
           isOpen={!!rebuildPackage}
           onClose={() => setRebuildPackage(undefined)}
           pkg={rebuildPackage}
         />
-      ) : (
-        <></>
-      )}
+      ) : null}
       <div className="mt-4 flex flex-col sm:flex-row sm:justify-start md:gap-8 gap-4 flex-wrap">
         <div className="max-w-full sm:max-w-xs flex w-full">
           <MultiSelect
             className="max-w-full sm:max-w-xs"
             icon={RiSoundModuleFill}
+            value={selectedBuildStatus}
             onValueChange={status => {
               if (currentPage !== 1) {
                 fetchPage(1);
@@ -142,6 +206,7 @@ export default function PackageTable({
           <MultiSelect
             className="max-w-full sm:max-w-xs"
             icon={RiSoundModuleFill}
+            value={selectedRepositories}
             onValueChange={repositories => {
               if (currentPage !== 1) {
                 fetchPage(1);
@@ -161,6 +226,7 @@ export default function PackageTable({
           <MultiSelect
             className="max-w-full sm:max-w-xs"
             icon={RiSoundModuleFill}
+            value={selectedMarch}
             onValueChange={arch => {
               if (currentPage !== 1) {
                 fetchPage(1);
@@ -196,10 +262,51 @@ export default function PackageTable({
           <Button
             className="rounded-tremor-default bg-tremor-brand text-center text-tremor-default font-medium text-tremor-brand-inverted shadow-tremor-input hover:bg-tremor-brand-emphasis dark:bg-dark-tremor-brand dark:text-dark-tremor-brand-inverted dark:shadow-dark-tremor-input dark:hover:bg-dark-tremor-brand-emphasis"
             icon={RiAddLine}
-            onClick={() => setModalOpen(true)}
+            onClick={() => setAddPkgModalOpen(true)}
           >
             Add Package
           </Button>
+          <Menu
+            as="div"
+            className="relative text-left z-50 data-[visible=true]:inline-block data-[visible=false]:hidden"
+            data-visible={selectedPackages.length !== 0}
+          >
+            <div>
+              <Menu.Button className="inline-flex w-full justify-center rounded-md bg-black dark:bg-white dark:text-black text-white px-4 py-2 text-sm font-medium hover:bg-opacity-80 focus:outline-none focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-opacity-75">
+                Options
+                <RiArrowDownSLine
+                  className="ml-2 -mr-1 h-5 w-5 dark:text-black text-white"
+                  aria-hidden="true"
+                />
+              </Menu.Button>
+            </div>
+            <Transition
+              as={Fragment}
+              enter="transition ease-out duration-100"
+              enterFrom="transform opacity-0 scale-95"
+              enterTo="transform opacity-100 scale-100"
+              leave="transition ease-in duration-75"
+              leaveFrom="transform opacity-100 scale-100"
+              leaveTo="transform opacity-0 scale-95"
+            >
+              <Menu.Items className="absolute right-0 mt-2 w-56 origin-top-right divide-y divide-gray-100 rounded-md bg-white dark:bg-black dark:text-white text-black shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none">
+                <div className="px-1 py-1 ">
+                  <Menu.Item>
+                    <button
+                      className="dark:ui-active:bg-white ui-active:bg-black ui-active:text-white dark:ui-active:text-black group flex w-full items-center rounded-md px-2 py-2 text-sm"
+                      onClick={() => setBulkRebuildModalOpen(true)}
+                    >
+                      <RiRestartLine
+                        className="mr-2 h-5 w-5 dark:ui-active:bg-white ui-active:bg-black ui-active:stroke-white dark:ui-active:stroke-black stroke-black dark:stroke-white fill-black dark:fill-white ui-active:fill-white dark:ui-active:fill-black"
+                        aria-hidden="true"
+                      />
+                      Rebuild
+                    </button>
+                  </Menu.Item>
+                </div>
+              </Menu.Items>
+            </Transition>
+          </Menu>
         </div>
       </div>
       <div className="flex w-full mt-2">
@@ -218,6 +325,35 @@ export default function PackageTable({
       <Table className="mt-2">
         <TableHead>
           <TableRow className="border-b border-tremor-border dark:border-dark-tremor-border">
+            <TableHeaderCell className="text-tremor-content-strong dark:text-dark-tremor-content-strong">
+              <Checkbox
+                checked={checked}
+                onCheckedChange={status => {
+                  if (status === true) {
+                    setSelectedPackages(
+                      selectedPackages.concat(
+                        packages.map(pkg => ({
+                          pkgbase: pkg.pkgbase,
+                          march: pkg.march,
+                          repository: pkg.repository,
+                          pkgname: pkg.pkgname,
+                        }))
+                      )
+                    );
+                  } else if (status === false) {
+                    setSelectedPackages(
+                      selectedPackages.filter(
+                        x =>
+                          packages.findIndex(
+                            pkg =>
+                              x.pkgbase === pkg.pkgbase && x.march === pkg.march
+                          ) === -1
+                      )
+                    );
+                  }
+                }}
+              />
+            </TableHeaderCell>
             <TableHeaderCell className="text-tremor-content-strong dark:text-dark-tremor-content-strong">
               Name
             </TableHeaderCell>
@@ -247,6 +383,31 @@ export default function PackageTable({
         <TableBody>
           {packages.map(pkg => (
             <TableRow key={pkg.packageID}>
+              <TableCell>
+                <Checkbox
+                  checked={selectedPackages.some(
+                    x => x.pkgbase === pkg.pkgbase && x.march === pkg.march
+                  )}
+                  onCheckedChange={checked =>
+                    setSelectedPackages(
+                      checked
+                        ? [
+                            ...selectedPackages,
+                            {
+                              pkgbase: pkg.pkgbase,
+                              march: pkg.march,
+                              repository: pkg.repository,
+                              pkgname: pkg.pkgname,
+                            },
+                          ]
+                        : selectedPackages.filter(
+                            x =>
+                              x.pkgbase !== pkg.pkgbase || x.march !== pkg.march
+                          )
+                    )
+                  }
+                />
+              </TableCell>
               <TableCell>
                 {pkg.pkgname} ({pkg.pkgbase})
               </TableCell>

@@ -20,24 +20,27 @@ import Loader from './Loader';
 import PackageTable from './PackageTable';
 import RebuildTable from './RebuildTable';
 import Statistics from './Statistics';
+import {BuilderPackageStatus} from '@/types/BuilderPackage';
+
+const list = [
+  {
+    text: 'Package List',
+    value: '0',
+  },
+  {
+    text: 'Rebuild Queue',
+    value: '1',
+  },
+  {
+    text: 'Statistics',
+    value: '2',
+  },
+];
 
 export default function AdminShell() {
   const [name, setName] = useState('');
   const [selectedTab, setSelectedTab] = useState('0');
-  const list = [
-    {
-      text: 'Package List',
-      value: '0',
-    },
-    {
-      text: 'Rebuild Queue',
-      value: '1',
-    },
-    {
-      text: 'Statistics',
-      value: '2',
-    },
-  ];
+  const [filterStatus, setFilterStatus] = useState<BuilderPackageStatus>();
   const [db, setDb] = useState<BuilderPackageDatabase>();
   useEffect(() => {
     getUsername().then(x => setName(x));
@@ -88,7 +91,7 @@ export default function AdminShell() {
           </p>
         </div>
       </div>
-      <KPICards db={db} />
+      <KPICards db={db} handleClick={type => setFilterStatus(type)} />
       <TabGroup
         index={parseInt(selectedTab, 10)}
         onIndexChange={index => setSelectedTab(index.toString())}
@@ -117,7 +120,7 @@ export default function AdminShell() {
         </TabList>
         <TabPanels>
           <TabPanel>
-            <PackageTable db={db} />
+            <PackageTable db={db} filterStatus={filterStatus} />
           </TabPanel>
           <TabPanel>
             <RebuildTable db={db} />

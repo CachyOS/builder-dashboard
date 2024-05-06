@@ -6,10 +6,12 @@ export default function Modal({
   children,
   isOpen,
   onClose,
+  large,
 }: Readonly<{
   children: React.ReactNode;
   isOpen: boolean;
   onClose: () => void;
+  large?: boolean;
 }>) {
   return (
     <Dialog
@@ -18,7 +20,7 @@ export default function Modal({
       open={isOpen}
       static={true}
     >
-      <DialogPanel className="sm:max-w-md">
+      <DialogPanel className={large ? 'sm:max-w-xl' : 'sm:max-w-md'}>
         <div className="absolute right-0 top-0 pr-3 pt-3">
           <button
             aria-label="Close"

@@ -22,6 +22,7 @@ export function useKpiCards(db: BuilderPackageDatabase) {
         name: 'Latest Packages',
         total,
         color: getColor(BuilderPackageStatus.LATEST),
+        type: BuilderPackageStatus.LATEST,
       },
       {
         current: building,
@@ -29,6 +30,7 @@ export function useKpiCards(db: BuilderPackageDatabase) {
         name: 'Building Packages',
         total,
         color: getColor(BuilderPackageStatus.BUILDING),
+        type: BuilderPackageStatus.BUILDING,
       },
       {
         current: queued,
@@ -36,6 +38,7 @@ export function useKpiCards(db: BuilderPackageDatabase) {
         name: 'Queued Packages',
         total,
         color: getColor(BuilderPackageStatus.QUEUED),
+        type: BuilderPackageStatus.QUEUED,
       },
       {
         current: failed,
@@ -43,6 +46,7 @@ export function useKpiCards(db: BuilderPackageDatabase) {
         name: 'Failed Packages',
         total,
         color: getColor(BuilderPackageStatus.FAILED),
+        type: BuilderPackageStatus.FAILED,
       },
     ],
     [total, queued, failed, latest, building]
@@ -55,6 +59,7 @@ export function useKpiCards(db: BuilderPackageDatabase) {
         name: 'Done Packages',
         total,
         color: getColor(BuilderPackageStatus.DONE),
+        type: BuilderPackageStatus.DONE,
       },
       {
         current: skipped,
@@ -62,6 +67,7 @@ export function useKpiCards(db: BuilderPackageDatabase) {
         name: 'Skipped Packages',
         total,
         color: getColor(BuilderPackageStatus.SKIPPED),
+        type: BuilderPackageStatus.SKIPPED,
       },
       {
         current: unknown,
@@ -69,6 +75,7 @@ export function useKpiCards(db: BuilderPackageDatabase) {
         name: 'Unknown Packages',
         total,
         color: getColor(BuilderPackageStatus.UNKNOWN),
+        type: BuilderPackageStatus.UNKNOWN,
       },
     ],
     [total, done, skipped, unknown]

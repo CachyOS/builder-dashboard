@@ -1,8 +1,15 @@
 import {BuilderPackageDatabase} from '@/lib/db';
 import {useKpiCards} from '@/lib/hooks';
+import {BuilderPackageStatus} from '@/types/BuilderPackage';
 import {Badge, Card, ProgressCircle} from '@tremor/react';
 
-export default function KPICards({db}: Readonly<{db: BuilderPackageDatabase}>) {
+export default function KPICards({
+  db,
+  handleClick,
+}: Readonly<{
+  db: BuilderPackageDatabase;
+  handleClick: (type: BuilderPackageStatus) => void;
+}>) {
   const {kpiCards, total} = useKpiCards(db);
   return (
     <div className="mt-6 flex flex-row flex-wrap gap-4">
@@ -12,8 +19,9 @@ export default function KPICards({db}: Readonly<{db: BuilderPackageDatabase}>) {
           : 0;
         return (
           <Card
-            className="p-4 hover:bg-tremor-background-muted hover:dark:bg-dark-tremor-background-muted w-72 flex-grow"
+            className="p-4 hover:bg-tremor-background-muted hover:dark:bg-dark-tremor-background-muted w-72 flex-grow hover:cursor-pointer"
             key={kpi.id}
+            onClick={() => handleClick(kpi.type)}
           >
             <div className="flex items-center justify-between">
               <p className="text-tremor-default text-tremor-content dark:text-dark-tremor-content">

@@ -96,6 +96,7 @@ export default function Statistics({
         type: 'success',
         isLoading: false,
         autoClose: 5000,
+        closeButton: true,
       });
     });
 
