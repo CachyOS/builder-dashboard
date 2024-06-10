@@ -14,14 +14,11 @@ jobs:
         with:
           token: ${{ secrets.VERCEL_TOKEN }}
           projectName: builder-dashboard
-          envVariableKeys: COOKIE_SECRET,CACHY_BUILDER_API_BASE_URL,NEXT_PUBLIC_TURNSTILE_SITE_KEY,TURNSTILE_SECRET_KEY
+          envVariableKeys: COOKIE_SECRET,NEXT_PUBLIC_TURNSTILE_SITE_KEY,TURNSTILE_SECRET_KEY
         env:
           COOKIE_SECRET: ${{ secrets.COOKIE_SECRET }}
           TARGET_COOKIE_SECRET: preview,development,production
           TYPE_COOKIE_SECRET: encrypted
-          CACHY_BUILDER_API_BASE_URL: ${{ secrets.CACHY_BUILDER_API_BASE_URL }}
-          TARGET_CACHY_BUILDER_API_BASE_URL: preview,development,production
-          TYPE_CACHY_BUILDER_API_BASE_URL: plain
           NEXT_PUBLIC_TURNSTILE_SITE_KEY: ${{ secrets.NEXT_PUBLIC_TURNSTILE_SITE_KEY }}
           TARGET_NEXT_PUBLIC_TURNSTILE_SITE_KEY: production
           TYPE_NEXT_PUBLIC_TURNSTILE_SITE_KEY: plain
