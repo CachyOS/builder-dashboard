@@ -3,6 +3,7 @@
 import {
   getPackages,
   getRebuildPackages,
+  getServerDetails,
   getUsername,
   logout,
 } from '@/app/actions';
@@ -47,12 +48,14 @@ const list = [
 
 export default function AdminShell() {
   const [name, setName] = useState('');
+  const [server, setServer] = useState('');
   const [selectedTab, setSelectedTab] = useState('0');
   const [filterStatus, setFilterStatus] = useState<BuilderPackageStatus>();
   const [db, setDb] = useState<BuilderPackageDatabase>();
   useLogoutShortcutListener(() => logout());
   useEffect(() => {
     getUsername().then(x => setName(x));
+    getServerDetails().then(x => setServer(x.name));
   }, []);
   useEffect(() => {
     toast.promise(
@@ -64,9 +67,11 @@ export default function AdminShell() {
         .then(x =>
           Promise.all([
             getPackages().then(data => x.packages.bulkUpsert(data)),
-            getRebuildPackages().then(data =>
-              x.rebuild_packages.bulkUpsert(data)
-            ),
+            getRebuildPackages().then(data => {
+              if (data.length) {
+                x.rebuild_packages.bulkUpsert(data);
+              }
+            }),
           ])
         ),
       {
@@ -103,7 +108,8 @@ export default function AdminShell() {
             </div>
           </div>
           <p className="mt-1 text-tremor-default leading-6 text-tremor-content dark:text-dark-tremor-content">
-            Hello {name}, welcome to the CachyOS builder dashboard!
+            Hello {name}, welcome to the CachyOS builder dashboard! You are
+            currently connected to the <strong>{server}</strong> server.
           </p>
         </div>
         <div className="justify-end sm:inline hidden">

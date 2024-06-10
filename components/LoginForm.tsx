@@ -2,11 +2,12 @@
 
 import {login} from '@/app/actions';
 import {Turnstile} from '@marsidev/react-turnstile';
-import {TextInput} from '@tremor/react';
+import {Select, SelectItem, TextInput} from '@tremor/react';
 import Image from 'next/image';
 import {redirect, useSearchParams} from 'next/navigation';
 import {useFormState} from 'react-dom';
 
+import servers, {defaultServer} from '@/lib/servers';
 import SubmitButton from './SubmitButton';
 
 const initialState = {
@@ -78,6 +79,24 @@ export default function LoginForm({loggedIn}: Readonly<{loggedIn?: boolean}>) {
             required
             type="password"
           />
+          <label
+            className="text-tremor-default font-medium text-tremor-content-strong dark:text-dark-tremor-content-strong"
+            htmlFor="server"
+          >
+            Server
+          </label>
+          <Select
+            defaultValue={defaultServer.url}
+            name="server"
+            id="server"
+            className="mt-2"
+          >
+            {servers.map(server => (
+              <SelectItem key={server.url} value={server.url}>
+                {server.name}
+              </SelectItem>
+            ))}
+          </Select>
           <Turnstile
             className="mt-2 outline-none ring-0"
             options={{theme: 'auto', appearance: 'always'}}

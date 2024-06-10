@@ -1,13 +1,14 @@
 'use server';
 
 import fetcher from '@/lib/fetcher';
+import servers from '@/lib/servers';
 import {SessionData, defaultSession, sessionOptions} from '@/lib/session';
 import {
+  BaseBuilderPackage,
   BuilderPackage,
-  BuilderRebuildPackage,
   BuilderPackageArchitecture,
   BuilderPackageRepository,
-  BaseBuilderPackage,
+  BuilderRebuildPackage,
 } from '@/types/BuilderPackage';
 import {getIronSession} from 'iron-session';
 import {cookies, headers} from 'next/headers';
@@ -21,6 +22,7 @@ export async function getSession() {
     session.isLoggedIn = defaultSession.isLoggedIn;
     session.token = defaultSession.token;
     session.createdAt = Date.now();
+    session.server = defaultSession.server;
   }
   return session;
 }
@@ -37,10 +39,19 @@ export async function login(_: any, formData: FormData) {
   const username = formData.get('username')?.toString().trim() ?? '';
   const password = formData.get('password')?.toString() ?? '';
   const redirectTo = formData.get('redirect')?.toString() ?? '';
+  const server = formData.get('server')?.toString() ?? defaultSession.server;
 
   if (!token) {
     return {
       errorCredentials: 'CF Turnstile verification failed. Please try again.',
+      errorPassword: '',
+      errorUsername: '',
+    };
+  }
+
+  if (!servers.find(s => s.url === server)) {
+    return {
+      errorCredentials: 'Invalid server.',
       errorPassword: '',
       errorUsername: '',
     };
@@ -75,13 +86,19 @@ export async function login(_: any, formData: FormData) {
     };
   }
 
-  const res = await fetcher<{token: string}>('/v1/login', '', headers(), {
-    body: JSON.stringify({
-      password,
-      username,
-    }),
-    method: 'POST',
-  }).catch(() => {});
+  const res = await fetcher<{token: string}>(
+    '/v1/login',
+    '',
+    headers(),
+    {
+      body: JSON.stringify({
+        password,
+        username,
+      }),
+      method: 'POST',
+    },
+    server
+  ).catch(() => {});
   if (!res?.token) {
     return {
       errorCredentials: 'Invalid username or password.',
@@ -93,6 +110,7 @@ export async function login(_: any, formData: FormData) {
   session.token = res.token;
   session.createdAt = Date.now();
   session.username = username;
+  session.server = server;
   await session.save();
   if (redirectTo?.startsWith('/')) {
     return redirect(redirectTo);
@@ -108,6 +126,14 @@ export async function getUsername() {
   return session.username;
 }
 
+export async function getServerDetails() {
+  const session = await getSession();
+  if (!session.isLoggedIn) {
+    return redirect('/');
+  }
+  return servers.find(s => s.url === session.server)!;
+}
+
 export async function getPackages() {
   const session = await getSession();
   if (!session.isLoggedIn) {
@@ -116,7 +142,9 @@ export async function getPackages() {
   return fetcher<BuilderPackage[]>(
     '/v1/packages',
     session.token,
-    headers()
+    headers(),
+    {},
+    session.server
   ).catch(() => []);
 }
 
@@ -128,7 +156,9 @@ export async function getRebuildPackages() {
   return fetcher<BuilderRebuildPackage[]>(
     '/v1/rebuild-status',
     session.token,
-    headers()
+    headers(),
+    {},
+    session.server
   ).catch(() => []);
 }
 
@@ -151,6 +181,7 @@ export async function getPackageLog(
     {
       method: 'GET',
     },
+    session.server,
     'text'
   )
     .then(text => stripAnsi(text))
@@ -175,7 +206,8 @@ export async function addPackage(_: any, formData: FormData) {
         url: pkgURL,
       }),
       method: 'POST',
-    }
+    },
+    session.server
   ).catch(() => {});
   if (!res?.success) {
     return {
@@ -213,7 +245,8 @@ export async function rebuildPackage(_: any, formData: FormData) {
     headers(),
     {
       method: 'PUT',
-    }
+    },
+    session.server
   ).catch(() => {});
   if (!res?.track_id) {
     return {
@@ -242,7 +275,8 @@ export async function bulkRebuildPackages(
     {
       method: 'PUT',
       body: JSON.stringify(packages),
-    }
+    },
+    session.server
   ).catch(() => []);
   return {
     success: !!res.length,

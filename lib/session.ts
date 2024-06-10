@@ -1,10 +1,13 @@
 import {SessionOptions} from 'iron-session';
 
+import {defaultServer} from './servers';
+
 export type SessionData = {
   createdAt: number;
   isLoggedIn: boolean;
   token: string;
   username: string;
+  server: string;
 };
 
 export const sessionOptions: SessionOptions = {
@@ -26,4 +29,5 @@ export const defaultSession: SessionData = {
   isLoggedIn: false,
   token: '',
   username: '',
+  server: defaultServer.url,
 };
