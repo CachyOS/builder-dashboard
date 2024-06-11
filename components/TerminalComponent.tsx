@@ -14,6 +14,12 @@ import '@xterm/xterm/css/xterm.css';
 import styles from 'ansi-styles';
 import {useEffect, useRef, useState} from 'react';
 
+import Loader from './Loader';
+
+const OSC = '\u001B]';
+const BEL = '\u0007';
+const SEP = ';';
+
 export default function TerminalComponent({
   march,
   pkgbase,
@@ -22,6 +28,7 @@ export default function TerminalComponent({
   pkgbase: string;
 }>) {
   const [loaded, setLoaded] = useState(false);
+  const [textLoaded, setTextLoaded] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const arrowUpRef = useRef<HTMLDivElement>(null);
@@ -115,9 +122,27 @@ export default function TerminalComponent({
             .replace(
               /\bWARN(ING)?\b/gi,
               `${styles.yellowBright.open}$&${styles.yellowBright.close}`
+            )
+            .replace(
+              /\b[A-Fa-f0-9]{16}\b|\b[A-Fa-f0-9]{40}\b/g,
+              [
+                OSC,
+                '8',
+                SEP,
+                SEP,
+                'https://keyserver.ubuntu.com/pks/lookup?search=$&&fingerprint=on&op=index',
+                BEL,
+                '$&',
+                OSC,
+                '8',
+                SEP,
+                SEP,
+                BEL,
+              ].join('')
             ) ||
             `${styles.yellowBright.open}No logs found for this package (Received a blank response).${styles.yellowBright.close}`,
           () => {
+            setTextLoaded(true);
             fitAddon.fit();
             inputRef.current?.addEventListener('input', searchEvent);
             arrowUpRef.current?.addEventListener('click', arrowUpEvent);
@@ -145,6 +170,9 @@ export default function TerminalComponent({
   });
   return (
     <div className="flex flex-col w-full">
+      <div hidden={!!textLoaded}>
+        <Loader text="Processing the log file..." />
+      </div>
       <div className="md:hidden" ref={containerRef}>
         <TextInput
           className="absolute z-10 max-w-xl right-0"
