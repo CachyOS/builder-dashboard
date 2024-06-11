@@ -83,12 +83,7 @@ export default function AdminShell() {
   }, []);
   if (!db) {
     return (
-      <div className="flex flex-col gap-2 w-full justify-center items-center min-h-screen">
-        <Loader />
-        <p className="text-tremor-content-strong dark:text-dark-tremor-content-strong text-center">
-          Loading the CachyOS Builder dashboard, please wait...
-        </p>
-      </div>
+      <Loader text="Loading the CachyOS Builder dashboard, please wait..." />
     );
   }
   return (
@@ -102,7 +97,7 @@ export default function AdminShell() {
               </h3>
             </div>
             <div className="justify-end sm:hidden">
-              <Button size="xs" icon={RiLogoutBoxLine} onClick={() => logout()}>
+              <Button icon={RiLogoutBoxLine} onClick={() => logout()} size="xs">
                 Logout
               </Button>
             </div>
@@ -137,9 +132,9 @@ export default function AdminShell() {
         <TabList className="mt-4 hidden sm:flex">
           {list.map(({text, value}) => (
             <Tab
+              className="text-tremor-default dark:text-dark-tremor-default ui-selected:dark:text-dark-tremor-brand ui-selected:text-tremor-brand"
               key={value}
               value={value}
-              className="text-tremor-default dark:text-dark-tremor-default ui-selected:dark:text-dark-tremor-brand ui-selected:text-tremor-brand"
             >
               {text}
             </Tab>

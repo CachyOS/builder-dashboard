@@ -168,7 +168,9 @@ export default function RebuildTable({
             icon={RiRefreshLine}
             onClick={() =>
               toast.promise(
-                getRebuildPackages().then(data => db.rebuild_packages.bulkUpsert(data)),
+                getRebuildPackages().then(data =>
+                  db.rebuild_packages.bulkUpsert(data)
+                ),
                 {
                   error: 'Failed to refresh packages',
                   pending: 'Refreshing packages...',
@@ -215,6 +217,9 @@ export default function RebuildTable({
             <TableHeaderCell className="text-tremor-content-strong dark:text-dark-tremor-content-strong text-right">
               Build Log
             </TableHeaderCell>
+            <TableHeaderCell className="text-tremor-content-strong dark:text-dark-tremor-content-strong text-right">
+              Raw Build Log
+            </TableHeaderCell>
           </TableRow>
         </TableHead>
         <TableBody>
@@ -231,9 +236,24 @@ export default function RebuildTable({
               </TableCell>
               <TableCell className="text-right">
                 <Link
-                  href={`/api/logs/${pkg.march}/${pkg.pkgbase}`}
-                  target="_blank"
+                  href={`/logs/${pkg.march}/${pkg.pkgbase}`}
                   prefetch={false}
+                  target="_blank"
+                >
+                  <Button
+                    className="text-dark-tremor-content-strong dark:text-tremor-content-strong dark:bg-white bg-black hover:bg-gray-700 dark:hover:bg-gray-200 text-right"
+                    disabled={pkg.status !== BuilderPackageStatus.FAILED}
+                    icon={RiArticleLine}
+                  >
+                    View
+                  </Button>
+                </Link>
+              </TableCell>
+              <TableCell className="text-right">
+                <Link
+                  href={`/logs/${pkg.march}/${pkg.pkgbase}?raw=true`}
+                  prefetch={false}
+                  target="_blank"
                 >
                   <Button
                     className="text-dark-tremor-content-strong dark:text-tremor-content-strong dark:bg-white bg-black hover:bg-gray-700 dark:hover:bg-gray-200 text-right"

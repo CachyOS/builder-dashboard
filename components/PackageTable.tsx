@@ -112,8 +112,8 @@ export default function PackageTable({
             ? [
                 {
                   $or: selectedPackages.map(pkg => ({
-                    pkgbase: pkg.pkgbase,
                     march: pkg.march,
+                    pkgbase: pkg.pkgbase,
                     repository: pkg.repository,
                   })),
                 },
@@ -186,7 +186,6 @@ export default function PackageTable({
           <MultiSelect
             className="max-w-full sm:max-w-xs"
             icon={RiSoundModuleFill}
-            value={selectedBuildStatus}
             onValueChange={status => {
               if (currentPage !== 1) {
                 fetchPage(1);
@@ -194,6 +193,7 @@ export default function PackageTable({
               setSelectedBuildStatus(status);
             }}
             placeholder="Filter by build status"
+            value={selectedBuildStatus}
           >
             {Object.values(BuilderPackageStatus).map(status => (
               <MultiSelectItem key={status} value={status}>
@@ -206,7 +206,6 @@ export default function PackageTable({
           <MultiSelect
             className="max-w-full sm:max-w-xs"
             icon={RiSoundModuleFill}
-            value={selectedRepositories}
             onValueChange={repositories => {
               if (currentPage !== 1) {
                 fetchPage(1);
@@ -214,6 +213,7 @@ export default function PackageTable({
               setSelectedRepositories(repositories);
             }}
             placeholder="Filter by repository"
+            value={selectedRepositories}
           >
             {Object.values(BuilderPackageRepository).map(repo => (
               <MultiSelectItem key={repo} value={repo}>
@@ -226,7 +226,6 @@ export default function PackageTable({
           <MultiSelect
             className="max-w-full sm:max-w-xs"
             icon={RiSoundModuleFill}
-            value={selectedMarch}
             onValueChange={arch => {
               if (currentPage !== 1) {
                 fetchPage(1);
@@ -234,6 +233,7 @@ export default function PackageTable({
               setSelectedMarch(arch);
             }}
             placeholder="Filter by march"
+            value={selectedMarch}
           >
             {Object.values(BuilderPackageArchitecture).map(arch => (
               <MultiSelectItem key={arch} value={arch}>
@@ -275,8 +275,8 @@ export default function PackageTable({
               <Menu.Button className="inline-flex w-full justify-center rounded-md bg-black dark:bg-white dark:text-black text-white px-4 py-2 text-sm font-medium hover:bg-opacity-80 focus:outline-none focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-opacity-75">
                 Options
                 <RiArrowDownSLine
-                  className="ml-2 -mr-1 h-5 w-5 dark:text-black text-white"
                   aria-hidden="true"
+                  className="ml-2 -mr-1 h-5 w-5 dark:text-black text-white"
                 />
               </Menu.Button>
             </div>
@@ -297,8 +297,8 @@ export default function PackageTable({
                       onClick={() => setBulkRebuildModalOpen(true)}
                     >
                       <RiRestartLine
-                        className="mr-2 h-5 w-5 dark:ui-active:bg-white ui-active:bg-black ui-active:stroke-white dark:ui-active:stroke-black stroke-black dark:stroke-white fill-black dark:fill-white ui-active:fill-white dark:ui-active:fill-black"
                         aria-hidden="true"
+                        className="mr-2 h-5 w-5 dark:ui-active:bg-white ui-active:bg-black ui-active:stroke-white dark:ui-active:stroke-black stroke-black dark:stroke-white fill-black dark:fill-white ui-active:fill-white dark:ui-active:fill-black"
                       />
                       Rebuild
                     </button>
@@ -333,10 +333,10 @@ export default function PackageTable({
                     setSelectedPackages(
                       selectedPackages.concat(
                         packages.map(pkg => ({
-                          pkgbase: pkg.pkgbase,
                           march: pkg.march,
-                          repository: pkg.repository,
+                          pkgbase: pkg.pkgbase,
                           pkgname: pkg.pkgname,
+                          repository: pkg.repository,
                         }))
                       )
                     );
@@ -376,6 +376,9 @@ export default function PackageTable({
               Build Log
             </TableHeaderCell>
             <TableHeaderCell className="text-tremor-content-strong dark:text-dark-tremor-content-strong text-right">
+              Raw Build Log
+            </TableHeaderCell>
+            <TableHeaderCell className="text-tremor-content-strong dark:text-dark-tremor-content-strong text-right">
               Rebuild
             </TableHeaderCell>
           </TableRow>
@@ -394,10 +397,10 @@ export default function PackageTable({
                         ? [
                             ...selectedPackages,
                             {
-                              pkgbase: pkg.pkgbase,
                               march: pkg.march,
-                              repository: pkg.repository,
+                              pkgbase: pkg.pkgbase,
                               pkgname: pkg.pkgname,
+                              repository: pkg.repository,
                             },
                           ]
                         : selectedPackages.filter(
@@ -422,9 +425,24 @@ export default function PackageTable({
               </TableCell>
               <TableCell className="text-right">
                 <Link
-                  href={`/api/logs/${pkg.march}/${pkg.pkgbase}`}
-                  target="_blank"
+                  href={`/logs/${pkg.march}/${pkg.pkgbase}`}
                   prefetch={false}
+                  target="_blank"
+                >
+                  <Button
+                    className="text-dark-tremor-content-strong dark:text-tremor-content-strong dark:bg-white bg-black hover:bg-gray-700 dark:hover:bg-gray-200 text-right"
+                    disabled={pkg.status !== BuilderPackageStatus.FAILED}
+                    icon={RiArticleLine}
+                  >
+                    View
+                  </Button>
+                </Link>
+              </TableCell>
+              <TableCell className="text-right">
+                <Link
+                  href={`/logs/${pkg.march}/${pkg.pkgbase}?raw=true`}
+                  prefetch={false}
+                  target="_blank"
                 >
                   <Button
                     className="text-dark-tremor-content-strong dark:text-tremor-content-strong dark:bg-white bg-black hover:bg-gray-700 dark:hover:bg-gray-200 text-right"

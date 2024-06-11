@@ -1,13 +1,13 @@
 'use client';
 
 import {login} from '@/app/actions';
+import servers, {defaultServer} from '@/lib/servers';
 import {Turnstile} from '@marsidev/react-turnstile';
 import {Select, SelectItem, TextInput} from '@tremor/react';
 import Image from 'next/image';
 import {redirect, useSearchParams} from 'next/navigation';
 import {useFormState} from 'react-dom';
 
-import servers, {defaultServer} from '@/lib/servers';
 import SubmitButton from './SubmitButton';
 
 const initialState = {
@@ -86,10 +86,10 @@ export default function LoginForm({loggedIn}: Readonly<{loggedIn?: boolean}>) {
             Server
           </label>
           <Select
-            defaultValue={defaultServer.url}
-            name="server"
-            id="server"
             className="mt-2"
+            defaultValue={defaultServer.url}
+            id="server"
+            name="server"
           >
             {servers.map(server => (
               <SelectItem key={server.url} value={server.url}>
@@ -99,11 +99,11 @@ export default function LoginForm({loggedIn}: Readonly<{loggedIn?: boolean}>) {
           </Select>
           <Turnstile
             className="mt-2 outline-none ring-0"
-            options={{theme: 'auto', appearance: 'always'}}
+            options={{appearance: 'always', theme: 'auto'}}
             siteKey={process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY!}
           />
           {redirectTo ? (
-            <input type="hidden" name="redirect" value={redirectTo} />
+            <input name="redirect" type="hidden" value={redirectTo} />
           ) : null}
           <SubmitButton text="Sign in" />
         </form>

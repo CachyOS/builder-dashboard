@@ -5,13 +5,13 @@ import {Dialog, DialogPanel} from '@tremor/react';
 export default function Modal({
   children,
   isOpen,
-  onClose,
   large,
+  onClose,
 }: Readonly<{
   children: React.ReactNode;
   isOpen: boolean;
-  onClose: () => void;
   large?: boolean;
+  onClose: () => void;
 }>) {
   return (
     <Dialog

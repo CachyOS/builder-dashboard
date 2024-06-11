@@ -18,7 +18,7 @@ export async function GET(
   if (!Object.values(BuilderPackageArchitecture).includes(march)) {
     return new NextResponse('Not found', {status: 404});
   }
-  const log = await getPackageLog(pkgbase, march, req.nextUrl.pathname);
+  const log = await getPackageLog(pkgbase, march, true, req.nextUrl.pathname);
   return new NextResponse(log, {
     headers: {
       'Content-Type': 'text/plain',

@@ -1,10 +1,22 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  experimental: {
-    serverComponentsExternalPackages: ["@node-rs/argon2"],
-  },
   poweredByHeader: false,
   reactStrictMode: false,
+  async redirects() {
+    return [
+      {
+        destination: '/api/logs/:arch/:pkgbase',
+        has: [
+          {
+            key: 'raw',
+            type: 'query',
+          },
+        ],
+        permanent: false,
+        source: '/logs/:arch/:pkgbase',
+      },
+    ];
+  },
 };
 
 export default nextConfig;

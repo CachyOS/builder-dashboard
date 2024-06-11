@@ -14,9 +14,9 @@ export enum BuilderPackageRepository {
 }
 
 export enum BuilderPackageArchitecture {
+  ZNVER4 = 'znver4',
   x86_64_v3 = 'x86-64-v3',
   x86_64_v4 = 'x86-64-v4',
-  ZNVER4 = 'znver4',
 }
 
 export interface BaseBuilderPackage {

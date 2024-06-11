@@ -35,7 +35,7 @@ export default function ConfirmBulkRebuildModal({
     }
   }, [onClose, state?.success]);
   return (
-    <Modal isOpen={isOpen} onClose={onClose} large>
+    <Modal isOpen={isOpen} large onClose={onClose}>
       <form action={formAction}>
         <h4 className="font-semibold text-tremor-content-strong dark:text-dark-tremor-content-strong text-center">
           Rebuild packages?

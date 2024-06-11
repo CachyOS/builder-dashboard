@@ -69,9 +69,9 @@ export default function Statistics({
   const data = useMemo(
     () =>
       [...kpiCards, ...extraKpiCards].map(x => ({
-        name: x.name,
         amount: x.current,
         color: x.color,
+        name: x.name,
         share: ((x.current / x.total) * 100).toFixed(2) + '%',
       })),
     [extraKpiCards, kpiCards]
@@ -92,11 +92,11 @@ export default function Statistics({
       const id = toast.loading('Updating statistics...');
       handleStats(packages, computedStats => setStats(computedStats));
       toast.update(id, {
-        render: 'Statistics updated!',
-        type: 'success',
-        isLoading: false,
         autoClose: 5000,
         closeButton: true,
+        isLoading: false,
+        render: 'Statistics updated!',
+        type: 'success',
       });
     });
 
@@ -111,9 +111,6 @@ export default function Statistics({
           Total builds by month
         </h3>
         <AreaChart
-          className="mt-4 h-72 lg:h-[512px]"
-          data={stats}
-          index="monthYear"
           categories={[
             BuilderPackageStatus.LATEST,
             BuilderPackageStatus.BUILDING,
@@ -123,12 +120,11 @@ export default function Statistics({
             BuilderPackageStatus.SKIPPED,
             BuilderPackageStatus.UNKNOWN,
           ]}
-          yAxisWidth={64}
-          onValueChange={v => v}
-          noDataText="Crunching the numbers..."
+          className="mt-4 h-72 lg:h-[512px]"
           colors={colors}
+          connectNulls
           customTooltip={props => {
-            const {payload, active, label} = props;
+            const {active, label, payload} = props;
             if (!active || !payload) {
               return null;
             }
@@ -144,7 +140,7 @@ export default function Statistics({
                   </div>
                 </div>
                 {payload.map((category, idx) => (
-                  <div key={idx} className="flex flex-1 space-x-2.5">
+                  <div className="flex flex-1 space-x-2.5" key={idx}>
                     <div
                       className={`flex w-1 flex-col ${getClassByColor(category.color ?? '')} rounded`}
                     />
@@ -161,9 +157,13 @@ export default function Statistics({
               </div>
             );
           }}
-          connectNulls
+          data={stats}
+          index="monthYear"
+          noDataText="Crunching the numbers..."
+          onValueChange={v => v}
           showAnimation
           showTooltip
+          yAxisWidth={64}
         />
       </Card>
       <Card className="sm:mx-auto xl:max-w-lg">
@@ -171,15 +171,15 @@ export default function Statistics({
           Total builds by category
         </h3>
         <DonutChart
-          className="mt-8"
-          data={data}
           category="amount"
-          index="name"
-          valueFormatter={numberFormatter}
+          className="mt-8"
           colors={colors}
-          onValueChange={v => v}
+          data={data}
+          index="name"
           noDataText="Crunching the numbers..."
+          onValueChange={v => v}
           showAnimation
+          valueFormatter={numberFormatter}
         />
         <p className="mt-8 flex items-center justify-between text-tremor-label text-tremor-content dark:text-dark-tremor-content">
           <span>Category</span>
@@ -187,14 +187,14 @@ export default function Statistics({
         </p>
         <List className="mt-2">
           {data.map(item => (
-            <ListItem key={item.name} className="space-x-6">
+            <ListItem className="space-x-6" key={item.name}>
               <div className="flex items-center space-x-2.5 truncate">
                 <span
+                  aria-hidden={true}
                   className={
                     getClassByColor(item.color) +
                     ' h-2.5 w-2.5 shrink-0 rounded-sm'
                   }
-                  aria-hidden={true}
                 />
                 <span className="truncate dark:text-dark-tremor-content-emphasis">
                   {item.name}

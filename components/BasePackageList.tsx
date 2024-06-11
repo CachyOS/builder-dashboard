@@ -57,8 +57,8 @@ export function BasePackageList({
       </Table>
       <Button
         className="w-full"
-        type="button"
         onClick={() => setShowAll(!showAll)}
+        type="button"
       >
         Show {showAll ? 'less' : 'more'}
       </Button>

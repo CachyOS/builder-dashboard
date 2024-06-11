@@ -6,7 +6,7 @@ import {ComponentPropsWithoutRef, ElementRef, forwardRef} from 'react';
 const Checkbox = forwardRef<
   ElementRef<typeof CheckboxPrimitives.Root>,
   ComponentPropsWithoutRef<typeof CheckboxPrimitives.Root>
->(({className, checked, ...props}, forwardedRef) => {
+>(({checked, className, ...props}, forwardedRef) => {
   return (
     <CheckboxPrimitives.Root
       ref={forwardedRef}
@@ -18,10 +18,10 @@ const Checkbox = forwardRef<
         {checked === 'indeterminate' ? (
           <svg
             aria-hidden="true"
-            width="16"
+            fill="none"
             height="16"
             viewBox="0 0 16 16"
-            fill="none"
+            width="16"
             xmlns="http://www.w3.org/2000/svg"
           >
             <line
@@ -36,10 +36,10 @@ const Checkbox = forwardRef<
           </svg>
         ) : (
           <svg
-            width="16"
+            fill="none"
             height="16"
             viewBox="0 0 16 16"
-            fill="none"
+            width="16"
             xmlns="http://www.w3.org/2000/svg"
           >
             <path

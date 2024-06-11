@@ -33,7 +33,7 @@ export async function logout() {
   return redirect('/');
 }
 
-export async function login(_: any, formData: FormData) {
+export async function login(_: unknown, formData: FormData) {
   const session = await getSession();
   const token = formData.get('cf-turnstile-response')?.toString() ?? '';
   const username = formData.get('username')?.toString().trim() ?? '';
@@ -68,11 +68,11 @@ export async function login(_: any, formData: FormData) {
   const turnstileResponse = await fetch(
     'https://challenges.cloudflare.com/turnstile/v0/siteverify',
     {
-      method: 'POST',
       body: `secret=${encodeURIComponent(process.env.TURNSTILE_SECRET_KEY!)}&response=${encodeURIComponent(token)}`,
       headers: {
         'content-type': 'application/x-www-form-urlencoded',
       },
+      method: 'POST',
     }
   )
     .then(res => res.json())
@@ -165,6 +165,7 @@ export async function getRebuildPackages() {
 export async function getPackageLog(
   pkg: string,
   march: BuilderPackageArchitecture,
+  strip = false,
   redirectTo?: string
 ) {
   const session = await getSession();
@@ -184,11 +185,11 @@ export async function getPackageLog(
     session.server,
     'text'
   )
-    .then(text => stripAnsi(text))
+    .then(text => (strip ? stripAnsi(text) : text))
     .catch(() => '');
 }
 
-export async function addPackage(_: any, formData: FormData) {
+export async function addPackage(_: unknown, formData: FormData) {
   const session = await getSession();
   const pkgURL = formData.get('pkgURL')?.toString().trim() ?? '';
   if (!pkgURL || !isURL(pkgURL)) {
@@ -221,7 +222,7 @@ export async function addPackage(_: any, formData: FormData) {
   };
 }
 
-export async function rebuildPackage(_: any, formData: FormData) {
+export async function rebuildPackage(_: unknown, formData: FormData) {
   const session = await getSession();
   const march = formData.get('march')?.toString().trim() ?? '';
   const repository = formData.get('repository')?.toString().trim() ?? '';
@@ -258,10 +259,7 @@ export async function rebuildPackage(_: any, formData: FormData) {
   };
 }
 
-export async function bulkRebuildPackages(
-  packages: BaseBuilderPackage[],
-  _: any
-) {
+export async function bulkRebuildPackages(packages: BaseBuilderPackage[]) {
   const session = await getSession();
   if (!Array.isArray(packages) || !packages.length) {
     return {
@@ -273,8 +271,8 @@ export async function bulkRebuildPackages(
     session.token,
     headers(),
     {
-      method: 'PUT',
       body: JSON.stringify(packages),
+      method: 'PUT',
     },
     session.server
   ).catch(() => []);

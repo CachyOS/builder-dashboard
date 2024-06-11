@@ -45,7 +45,7 @@ export default function KPICards({
                   <></>
                 )}
               </p>
-              <ProgressCircle value={percentage} size="md" color={kpi.color}>
+              <ProgressCircle color={kpi.color} size="md" value={percentage}>
                 <span className="text-xs font-medium text-tremor-content-strong dark:text-dark-tremor-content-strong">
                   {percentage}%
                 </span>

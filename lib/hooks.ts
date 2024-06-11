@@ -2,6 +2,7 @@
 
 import {BuilderPackageStatus} from '@/types/BuilderPackage';
 import {useEffect, useMemo, useState} from 'react';
+
 import {BuilderPackageDatabase} from './db';
 import {getColor} from './util';
 
@@ -23,35 +24,35 @@ export function useKpiCards(db: BuilderPackageDatabase) {
   const kpiCards = useMemo(
     () => [
       {
+        color: getColor(BuilderPackageStatus.LATEST),
         current: latest,
         id: 1,
         name: 'Latest Packages',
         total,
-        color: getColor(BuilderPackageStatus.LATEST),
         type: BuilderPackageStatus.LATEST,
       },
       {
+        color: getColor(BuilderPackageStatus.BUILDING),
         current: building,
         id: 2,
         name: 'Building Packages',
         total,
-        color: getColor(BuilderPackageStatus.BUILDING),
         type: BuilderPackageStatus.BUILDING,
       },
       {
+        color: getColor(BuilderPackageStatus.QUEUED),
         current: queued,
         id: 3,
         name: 'Queued Packages',
         total,
-        color: getColor(BuilderPackageStatus.QUEUED),
         type: BuilderPackageStatus.QUEUED,
       },
       {
+        color: getColor(BuilderPackageStatus.FAILED),
         current: failed,
         id: 4,
         name: 'Failed Packages',
         total,
-        color: getColor(BuilderPackageStatus.FAILED),
         type: BuilderPackageStatus.FAILED,
       },
     ],
@@ -60,27 +61,27 @@ export function useKpiCards(db: BuilderPackageDatabase) {
   const extraKpiCards = useMemo(
     () => [
       {
+        color: getColor(BuilderPackageStatus.DONE),
         current: done,
         id: 1,
         name: 'Done Packages',
         total,
-        color: getColor(BuilderPackageStatus.DONE),
         type: BuilderPackageStatus.DONE,
       },
       {
+        color: getColor(BuilderPackageStatus.SKIPPED),
         current: skipped,
         id: 2,
         name: 'Skipped Packages',
         total,
-        color: getColor(BuilderPackageStatus.SKIPPED),
         type: BuilderPackageStatus.SKIPPED,
       },
       {
+        color: getColor(BuilderPackageStatus.UNKNOWN),
         current: unknown,
         id: 3,
         name: 'Unknown Packages',
         total,
-        color: getColor(BuilderPackageStatus.UNKNOWN),
         type: BuilderPackageStatus.UNKNOWN,
       },
     ],
@@ -233,4 +234,21 @@ export function useLogoutShortcutListener(callback: () => void) {
       setColonQPressed(false);
     }
   }, [callback, colonQPressed]);
+}
+
+export function useCtrlFShortcutListener(callback: () => void) {
+  useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.ctrlKey && event.key.toLowerCase() === 'f') {
+        event.preventDefault();
+        callback();
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+    };
+  });
 }
