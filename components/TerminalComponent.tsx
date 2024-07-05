@@ -124,6 +124,10 @@ export default function TerminalComponent({
               `${styles.yellowBright.open}$&${styles.yellowBright.close}`
             )
             .replace(
+              /.*command not found.*/gi,
+              `${styles.redBright.open}$&${styles.redBright.close}`
+            )
+            .replace(
               /\b[A-Fa-f0-9]{16}\b|\b[A-Fa-f0-9]{40}\b/g,
               [
                 OSC,
