@@ -112,6 +112,16 @@ export default function TerminalComponent({
         }
         return true;
       });
+      terminal.attachCustomKeyEventHandler(arg => {
+        if (arg.ctrlKey && arg.code === 'KeyC' && arg.type === 'keydown') {
+          const selection = terminal.getSelection();
+          if (selection) {
+            navigator.clipboard.writeText(selection);
+            return false;
+          }
+        }
+        return true;
+      });
       getPackageLog(pkgbase, march, true).then(log =>
         terminal.write(
           log
@@ -124,7 +134,7 @@ export default function TerminalComponent({
               `${styles.yellowBright.open}$&${styles.yellowBright.close}`
             )
             .replace(
-              /.*command not found.*/gi,
+              /\bcommand not found.*/gi,
               `${styles.redBright.open}$&${styles.redBright.close}`
             )
             .replace(
