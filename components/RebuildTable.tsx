@@ -45,6 +45,7 @@ export default function RebuildTable({
     []
   );
   const [selectedMarch, setSelectedMarch] = useState<string[]>([]);
+  const [pageSize, setPageSize] = useState(10);
   const packageCollection = useMemo(
     () => db.collections.rebuild_packages,
     [db]
@@ -99,7 +100,7 @@ export default function RebuildTable({
     pageCount,
     result: packages,
   } = useRxQuery(query, {
-    pageSize: 10,
+    pageSize,
     pagination: 'Traditional',
   });
   return (
@@ -288,7 +289,7 @@ export default function RebuildTable({
         </Button>
       </div>
       <div className="flex justify-center gap-8 mt-4">
-        <div className="flex flex-col">
+        <div className="flex flex-col gap-y-2">
           <label
             className="text-tremor-default text-tremor-content dark:text-dark-tremor-content text-center mb-2"
             htmlFor="page"
@@ -305,6 +306,25 @@ export default function RebuildTable({
             }
             placeholder="Page Number"
             value={currentPage}
+          />
+          <label
+            className="text-tremor-default text-tremor-content dark:text-dark-tremor-content text-center mb-2"
+            htmlFor="pageSize"
+          >
+            Page Size
+          </label>
+          <NumberInput
+            id="pageSize"
+            max={50}
+            min={1}
+            name="pageSize"
+            onValueChange={value =>
+              isNaN(value) || value > 50 || value < 1
+                ? null
+                : setPageSize(value)
+            }
+            placeholder="Page Size"
+            value={pageSize}
           />
         </div>
       </div>

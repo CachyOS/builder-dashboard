@@ -10,7 +10,13 @@ import {
   BuilderPackageStatus,
   BuilderPackageWithID,
 } from '@/types/BuilderPackage';
-import {Menu, Transition} from '@headlessui/react';
+import {
+  Menu,
+  MenuButton,
+  MenuItem,
+  MenuItems,
+  Transition,
+} from '@headlessui/react';
 import {CheckedState} from '@radix-ui/react-checkbox';
 import {
   RiAddLine,
@@ -67,6 +73,7 @@ export default function PackageTable({
     []
   );
   const [selectedMarch, setSelectedMarch] = useState<string[]>([]);
+  const [pageSize, setPageSize] = useState(10);
   useEffect(() => {
     if (filterStatus) {
       setSelectedBuildStatus([filterStatus]);
@@ -138,7 +145,7 @@ export default function PackageTable({
     pageCount,
     result: packages,
   } = useRxQuery(query, {
-    pageSize: 10,
+    pageSize,
     pagination: 'Traditional',
   });
   useEffect(() => {
@@ -272,13 +279,13 @@ export default function PackageTable({
             data-visible={selectedPackages.length !== 0}
           >
             <div>
-              <Menu.Button className="inline-flex w-full justify-center rounded-md bg-black dark:bg-white dark:text-black text-white px-4 py-2 text-sm font-medium hover:bg-opacity-80 focus:outline-none focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-opacity-75">
+              <MenuButton className="inline-flex w-full justify-center rounded-md bg-black dark:bg-white dark:text-black text-white px-4 py-2 text-sm font-medium hover:bg-opacity-80 focus:outline-none focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-opacity-75">
                 Options
                 <RiArrowDownSLine
                   aria-hidden="true"
                   className="ml-2 -mr-1 h-5 w-5 dark:text-black text-white"
                 />
-              </Menu.Button>
+              </MenuButton>
             </div>
             <Transition
               as={Fragment}
@@ -289,9 +296,9 @@ export default function PackageTable({
               leaveFrom="transform opacity-100 scale-100"
               leaveTo="transform opacity-0 scale-95"
             >
-              <Menu.Items className="absolute right-0 mt-2 w-56 origin-top-right divide-y divide-gray-100 rounded-md bg-white dark:bg-black dark:text-white text-black shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none">
+              <MenuItems className="absolute right-0 mt-2 w-56 origin-top-right divide-y divide-gray-100 rounded-md bg-white dark:bg-black dark:text-white text-black shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none">
                 <div className="px-1 py-1 ">
-                  <Menu.Item>
+                  <MenuItem>
                     <button
                       className="dark:ui-active:bg-white ui-active:bg-black ui-active:text-white dark:ui-active:text-black group flex w-full items-center rounded-md px-2 py-2 text-sm"
                       onClick={() => setBulkRebuildModalOpen(true)}
@@ -302,9 +309,9 @@ export default function PackageTable({
                       />
                       Rebuild
                     </button>
-                  </Menu.Item>
+                  </MenuItem>
                 </div>
-              </Menu.Items>
+              </MenuItems>
             </Transition>
           </Menu>
         </div>
@@ -486,7 +493,7 @@ export default function PackageTable({
         </Button>
       </div>
       <div className="flex justify-center gap-8 mt-4">
-        <div className="flex flex-col">
+        <div className="flex flex-col gap-y-2">
           <label
             className="text-tremor-default text-tremor-content dark:text-dark-tremor-content text-center mb-2"
             htmlFor="page"
@@ -503,6 +510,23 @@ export default function PackageTable({
             }
             placeholder="Page Number"
             value={currentPage}
+          />
+          <label
+            className="text-tremor-default text-tremor-content dark:text-dark-tremor-content text-center mb-2"
+            htmlFor="pageSize"
+          >
+            Page Size
+          </label>
+          <NumberInput
+            id="pageSize"
+            max={50}
+            min={1}
+            name="pageSize"
+            onValueChange={value =>
+              isNaN(value) || (value > 50 || value < 1) ? null : setPageSize(value)
+            }
+            placeholder="Page Size"
+            value={pageSize}
           />
         </div>
       </div>
