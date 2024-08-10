@@ -3,6 +3,7 @@
 import fetcher from '@/lib/fetcher';
 import servers from '@/lib/servers';
 import {SessionData, defaultSession, sessionOptions} from '@/lib/session';
+import {AuditLogEntry} from '@/types/AuditLog';
 import {
   BaseBuilderPackage,
   BuilderPackage,
@@ -279,4 +280,18 @@ export async function bulkRebuildPackages(packages: BaseBuilderPackage[]) {
   return {
     success: !!res.length,
   };
+}
+
+export async function getAuditLogs() {
+  const session = await getSession();
+  if (!session.isLoggedIn) {
+    return redirect('/');
+  }
+  return fetcher<AuditLogEntry[]>(
+    '/v1/audit-logs',
+    session.token,
+    headers(),
+    {},
+    session.server
+  ).catch(() => []);
 }

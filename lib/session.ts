@@ -5,9 +5,9 @@ import {defaultServer} from './servers';
 export type SessionData = {
   createdAt: number;
   isLoggedIn: boolean;
+  server: string;
   token: string;
   username: string;
-  server: string;
 };
 
 export const sessionOptions: SessionOptions = {
@@ -27,7 +27,7 @@ export const sessionOptions: SessionOptions = {
 export const defaultSession: SessionData = {
   createdAt: Date.now(),
   isLoggedIn: false,
+  server: defaultServer.url,
   token: '',
   username: '',
-  server: defaultServer.url,
 };

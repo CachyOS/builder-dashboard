@@ -1,3 +1,8 @@
+import {
+  AuditLogEntry,
+  AuditLogEventName,
+  ParsedAuditLogEntry,
+} from '@/types/AuditLog';
 import {BuilderPackageStatus} from '@/types/BuilderPackage';
 
 export function getColor(status: BuilderPackageStatus) {
@@ -37,4 +42,47 @@ export function getClassByColor(color: string) {
     default:
       return 'bg-gray-500';
   }
+}
+
+export function parseAuditLogEntry(event: AuditLogEntry): ParsedAuditLogEntry {
+  if (event.event_name === AuditLogEventName.QPKG_REBUILD) {
+    return {
+      ...event,
+      packages: [
+        {
+          march: event.event_desc.split("'")[5],
+          pkgbase: event.event_desc.split("'")[1],
+          repository: event.event_desc.split("'")[3],
+        },
+      ],
+      updated: event.updated / 1000000,
+    };
+  } else if (event.event_name === AuditLogEventName.BULK_QPKG_REBUILD) {
+    let packages: {
+      march: string;
+      pkgbase: string;
+      repository: string;
+    }[] = [];
+    const raw_pkgs = new RegExp(/\[.*\]/g).exec(event.event_desc);
+    if (raw_pkgs?.length) {
+      const [pkgbase, repository, march] = raw_pkgs[0]
+        .split("'-'")
+        .map(pkg => JSON.parse(pkg));
+      packages = pkgbase.map((pkgbase: string, i: number) => ({
+        march: march[i],
+        pkgbase,
+        repository: repository[i],
+      }));
+    }
+    return {
+      ...event,
+      packages,
+      updated: event.updated / 1000000,
+    };
+  }
+  return {
+    ...event,
+    packages: [],
+    updated: event.updated / 1000000,
+  };
 }

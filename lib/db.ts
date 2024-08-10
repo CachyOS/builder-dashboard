@@ -1,3 +1,4 @@
+import {AuditLogEventName, ParsedAuditLogWithID} from '@/types/AuditLog';
 import {
   BuilderPackageArchitecture,
   BuilderPackageRepository,
@@ -14,6 +15,7 @@ import {
 import {wrappedKeyCompressionStorage} from 'rxdb/plugins/key-compression';
 import {RxDBQueryBuilderPlugin} from 'rxdb/plugins/query-builder';
 import {getRxStorageMemory} from 'rxdb/plugins/storage-memory';
+import {RxDBLocalDocumentsPlugin} from 'rxdb/plugins/local-documents';
 
 const BuilderPackageSchema = toTypedRxJsonSchema({
   indexes: ['pkgbase', 'pkgname', 'repository', 'status'],
@@ -126,10 +128,74 @@ const BuilderRebuildPackageSchema = toTypedRxJsonSchema({
   version: 0,
 });
 
+const ParsedAuditLogSchema = toTypedRxJsonSchema({
+  indexes: ['updated', 'username', 'event_name'],
+  keyCompression: true,
+  primaryKey: {
+    fields: ['updated', 'username', 'event_name'],
+    key: 'auditLogID',
+    separator: '-',
+  },
+  properties: {
+    auditLogID: {
+      maxLength: 320,
+      type: 'string',
+    },
+    event_desc: {
+      type: 'string',
+    },
+    event_name: {
+      enum: Object.values(AuditLogEventName),
+      maxLength: 32,
+      type: 'string',
+    },
+    packages: {
+      items: {
+        properties: {
+          march: {
+            enum: Object.values(BuilderPackageArchitecture),
+            maxLength: 10,
+            type: 'string',
+          },
+          pkgbase: {
+            maxLength: 256,
+            type: 'string',
+          },
+          repository: {
+            enum: Object.values(BuilderPackageRepository),
+            maxLength: 10,
+            type: 'string',
+          },
+        },
+        required: ['march', 'pkgbase', 'repository'],
+        type: 'object',
+      },
+      type: 'array',
+    },
+    updated: {
+      maximum: Number.MAX_SAFE_INTEGER,
+      minimum: 0,
+      multipleOf: 1,
+      type: 'number',
+    },
+    username: {
+      maxLength: 256,
+      type: 'string',
+    },
+  },
+  required: ['auditLogID', 'event_desc', 'event_name', 'packages', 'updated'],
+  title: 'auditLogs',
+  type: 'object',
+  version: 0,
+});
+
 export type BuilderPackageCollection = RxCollection<BuilderPackageWithID>;
 export type BuilderRebuildPackageCollection =
   RxCollection<BuilderPackageWithID>;
+export type ParsedAuditLogCollection = RxCollection<ParsedAuditLogWithID>;
 export type BuilderPackageDatabase = RxDatabase<{
+  // camelCase is not compatible with RxDB for database and collection names
+  audit_logs: ParsedAuditLogCollection;
   packages: BuilderPackageCollection;
   // camelCase is not compatible with RxDB for database and collection names
   rebuild_packages: BuilderRebuildPackageCollection;
@@ -142,6 +208,7 @@ export async function getRxDB() {
     );
   }
   addRxPlugin(RxDBQueryBuilderPlugin);
+  addRxPlugin(RxDBLocalDocumentsPlugin);
   const db: BuilderPackageDatabase = await createRxDatabase({
     eventReduce: true,
     ignoreDuplicate: process.env.NODE_ENV !== 'production',
@@ -152,6 +219,11 @@ export async function getRxDB() {
     }),
   });
   await db.addCollections({
+    // camelCase is not compatible with RxDB for database and collection names
+    audit_logs: {
+      schema: ParsedAuditLogSchema,
+      localDocuments: true,
+    },
     packages: {
       schema: BuilderPackageSchema,
     },

@@ -1,13 +1,13 @@
 const servers = [
   {
-    url: 'https://builder-api.cachyos.org/api',
-    name: 'CachyOS Builder API - STANDARD',
     default: true,
+    name: 'CachyOS Builder API - STANDARD',
+    url: 'https://builder-api.cachyos.org/api',
   },
   {
-    url: 'https://builder-api-1.cachyos.org/api',
-    name: 'CachyOS Builder API - ZEN4',
     default: false,
+    name: 'CachyOS Builder API - ZEN4',
+    url: 'https://builder-api-1.cachyos.org/api',
   },
 ];
 

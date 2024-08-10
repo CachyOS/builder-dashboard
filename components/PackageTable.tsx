@@ -523,7 +523,9 @@ export default function PackageTable({
             min={1}
             name="pageSize"
             onValueChange={value =>
-              isNaN(value) || (value > 50 || value < 1) ? null : setPageSize(value)
+              isNaN(value) || value > 50 || value < 1
+                ? null
+                : setPageSize(value)
             }
             placeholder="Page Size"
             value={pageSize}

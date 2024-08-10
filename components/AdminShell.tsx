@@ -1,6 +1,7 @@
 'use client';
 
 import {
+  getAuditLogs,
   getPackages,
   getRebuildPackages,
   getServerDetails,
@@ -25,6 +26,9 @@ import {
 import {useEffect, useState} from 'react';
 import {toast} from 'react-toastify';
 
+import {parseAuditLogEntry} from '@/lib/util';
+import {DistinctAuditLogUsers} from '@/types/AuditLog';
+import AuditLogs from './AuditLogs';
 import KPICards from './KPICards';
 import Loader from './Loader';
 import PackageTable from './PackageTable';
@@ -41,8 +45,12 @@ const list = [
     value: '1',
   },
   {
-    text: 'Statistics',
+    text: 'Audit Logs',
     value: '2',
+  },
+  {
+    text: 'Statistics',
+    value: '3',
   },
 ];
 
@@ -69,8 +77,22 @@ export default function AdminShell() {
             getPackages().then(data => x.packages.bulkUpsert(data)),
             getRebuildPackages().then(data => {
               if (data.length) {
-                x.rebuild_packages.bulkUpsert(data);
+                return x.rebuild_packages.bulkUpsert(data);
               }
+            }),
+            getAuditLogs().then(data => {
+              let users: string[] = [];
+              if (data.length) {
+                data.forEach(log => {
+                  if (!users.includes(log.username)) {
+                    users.push(log.username);
+                  }
+                  x.audit_logs.upsert(parseAuditLogEntry(log));
+                });
+              }
+              return x.audit_logs.upsertLocal<DistinctAuditLogUsers>('users', {
+                users,
+              });
             }),
           ])
         ),
@@ -146,6 +168,9 @@ export default function AdminShell() {
           </TabPanel>
           <TabPanel>
             <RebuildTable db={db} />
+          </TabPanel>
+          <TabPanel>
+            <AuditLogs db={db} />
           </TabPanel>
           <TabPanel>
             <Statistics db={db} />
