@@ -97,9 +97,10 @@ export default function LoginForm({loggedIn}: Readonly<{loggedIn?: boolean}>) {
               </SelectItem>
             ))}
           </Select>
+          <p>Beep boop, boop beep?</p>
           <Turnstile
             className="mt-2 outline-none ring-0"
-            options={{appearance: 'always', theme: 'auto'}}
+            options={{appearance: 'always', theme: 'auto', size: 'flexible'}}
             siteKey={process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY!}
           />
           {redirectTo ? (

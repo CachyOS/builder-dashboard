@@ -1,0 +1,13 @@
+diff --git a/dist/index.d.ts b/dist/index.d.ts
+index f62283763102262676858ea080ce63d1a3f23ff7..762c388349d4e2ddf37a31e33cf4c3ae5c4f79e8 100644
+--- a/dist/index.d.ts
++++ b/dist/index.d.ts
+@@ -152,7 +152,7 @@ interface RenderOptions {
+      * The widget size. Can take the following values: `normal`, `compact`. The normal size is 300x65px, the compact size is 130x120px.
+      * @default `normal`
+      */
+-    size?: 'normal' | 'compact';
++    size?: 'normal' | 'compact' | 'flexible';
+     /**
+      * Controls whether the widget should automatically retry to obtain a token if it did not succeed. The default is `'auto'`, which will retry automatically. This can be set to `'never'` to disable retry upon failure.
+      * @default `auto`
