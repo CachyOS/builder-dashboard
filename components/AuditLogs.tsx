@@ -6,7 +6,7 @@ import {parseAuditLogEntry} from '@/lib/util';
 import {
   AuditLogEventName,
   DistinctAuditLogUsers,
-  ParsedAuditLogWithID,
+  ParsedAuditLogEntry,
 } from '@/types/AuditLog';
 import {
   BuilderPackageArchitecture,
@@ -18,7 +18,6 @@ import {
   AccordionBody,
   AccordionHeader,
   AccordionList,
-  Badge,
   Button,
   Card,
   Icon,
@@ -57,7 +56,7 @@ export default function AuditLogs({
       });
   }, [db]);
   const query = useMemo(() => {
-    const searchQuery: MangoQuery<ParsedAuditLogWithID> = {
+    const searchQuery: MangoQuery<ParsedAuditLogEntry> = {
       selector: {
         ...(selectedUser.length
           ? {
@@ -244,7 +243,7 @@ export default function AuditLogs({
       </div>
       <AccordionList>
         {auditLogs.map(log => (
-          <Accordion className="rounded-lg" key={log.auditLogID}>
+          <Accordion className="rounded-lg" key={log.id}>
             <AccordionHeader className="text-sm font-medium text-tremor-content-strong dark:text-dark-tremor-content-strong">
               <Icon
                 icon={RiRefreshLine}

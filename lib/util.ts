@@ -1,6 +1,7 @@
 import {
   AuditLogEntry,
   AuditLogEventName,
+  AuditLogPackageWithPkgName,
   ParsedAuditLogEntry,
 } from '@/types/AuditLog';
 import {BuilderPackageStatus} from '@/types/BuilderPackage';
@@ -58,21 +59,23 @@ export function parseAuditLogEntry(event: AuditLogEntry): ParsedAuditLogEntry {
       updated: event.updated / 1000000,
     };
   } else if (event.event_name === AuditLogEventName.BULK_QPKG_REBUILD) {
+    console.log(event);
     let packages: {
       march: string;
       pkgbase: string;
       repository: string;
     }[] = [];
-    const raw_pkgs = new RegExp(/\[.*\]/g).exec(event.event_desc);
-    if (raw_pkgs?.length) {
-      const [pkgbase, repository, march] = raw_pkgs[0]
-        .split("'-'")
-        .map(pkg => JSON.parse(pkg));
-      packages = pkgbase.map((pkgbase: string, i: number) => ({
-        march: march[i],
-        pkgbase,
-        repository: repository[i],
-      }));
+    const raw_pkgs = event.event_desc
+      .replace(/'/g, '')
+      .replace('bulk rebuild queued: ', '');
+    if (raw_pkgs.length) {
+      packages = (JSON.parse(raw_pkgs) as AuditLogPackageWithPkgName[]).map(
+        x => ({
+          march: x.march,
+          pkgbase: `${x.pkgbase} (${x.pkgname})`,
+          repository: x.repository,
+        })
+      );
     }
     return {
       ...event,

@@ -1,4 +1,4 @@
-import {AuditLogEventName, ParsedAuditLogWithID} from '@/types/AuditLog';
+import {AuditLogEventName, ParsedAuditLogEntry} from '@/types/AuditLog';
 import {
   BuilderPackageArchitecture,
   BuilderPackageRepository,
@@ -13,9 +13,9 @@ import {
   toTypedRxJsonSchema,
 } from 'rxdb';
 import {wrappedKeyCompressionStorage} from 'rxdb/plugins/key-compression';
+import {RxDBLocalDocumentsPlugin} from 'rxdb/plugins/local-documents';
 import {RxDBQueryBuilderPlugin} from 'rxdb/plugins/query-builder';
 import {getRxStorageMemory} from 'rxdb/plugins/storage-memory';
-import {RxDBLocalDocumentsPlugin} from 'rxdb/plugins/local-documents';
 
 const BuilderPackageSchema = toTypedRxJsonSchema({
   indexes: ['pkgbase', 'pkgname', 'repository', 'status'],
@@ -131,13 +131,9 @@ const BuilderRebuildPackageSchema = toTypedRxJsonSchema({
 const ParsedAuditLogSchema = toTypedRxJsonSchema({
   indexes: ['updated', 'username', 'event_name'],
   keyCompression: true,
-  primaryKey: {
-    fields: ['updated', 'username', 'event_name'],
-    key: 'auditLogID',
-    separator: '-',
-  },
+  primaryKey: 'id',
   properties: {
-    auditLogID: {
+    id: {
       maxLength: 320,
       type: 'string',
     },
@@ -183,7 +179,7 @@ const ParsedAuditLogSchema = toTypedRxJsonSchema({
       type: 'string',
     },
   },
-  required: ['auditLogID', 'event_desc', 'event_name', 'packages', 'updated'],
+  required: ['id', 'event_desc', 'event_name', 'packages', 'updated'],
   title: 'auditLogs',
   type: 'object',
   version: 0,
@@ -192,7 +188,7 @@ const ParsedAuditLogSchema = toTypedRxJsonSchema({
 export type BuilderPackageCollection = RxCollection<BuilderPackageWithID>;
 export type BuilderRebuildPackageCollection =
   RxCollection<BuilderPackageWithID>;
-export type ParsedAuditLogCollection = RxCollection<ParsedAuditLogWithID>;
+export type ParsedAuditLogCollection = RxCollection<ParsedAuditLogEntry>;
 export type BuilderPackageDatabase = RxDatabase<{
   // camelCase is not compatible with RxDB for database and collection names
   audit_logs: ParsedAuditLogCollection;
