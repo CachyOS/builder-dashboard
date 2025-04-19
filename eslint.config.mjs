@@ -1,12 +1,12 @@
 import js from '@eslint/js';
 import next from '@next/eslint-plugin-next';
-import perfectionistNatural from 'eslint-plugin-perfectionist/configs/recommended-natural';
+import perfectionist from 'eslint-plugin-perfectionist';
 import eslintPluginPrettierRecommended from 'eslint-plugin-prettier/recommended';
 import tsEslint from 'typescript-eslint';
 
 export default tsEslint.config(
   js.configs.recommended,
-  perfectionistNatural,
+  perfectionist.configs['recommended-natural'],
   eslintPluginPrettierRecommended,
   ...tsEslint.configs.recommended,
   {
