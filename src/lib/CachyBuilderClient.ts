@@ -10,8 +10,13 @@ import {
   LoginRequestSchema,
   LoginResponse,
   LoginResponseSchema,
+  PackageList,
+  PackageListSchema,
   PackageMArch,
+  RebuildPackageList,
+  RebuildPackageListSchema,
   ResponseType,
+  SearchPackagesQuery,
   UserProfile,
   UserProfileSchema,
 } from '@/lib/typings';
@@ -29,13 +34,13 @@ export default class CachyBuilderClient {
       default: true,
       description: 'Zen4 Builder',
       name: 'CachyOS Zen4',
-      url: 'https://builder-api.cachyos.org/api',
+      url: 'https://builder-api-1.cachyos.org/api',
     },
     {
       default: false,
       description: 'Standard Builder',
       name: 'CachyOS Standard',
-      url: 'https://builder-api-1.cachyos.org/api',
+      url: 'https://builder-api.cachyos.org/api',
     },
   ];
 
@@ -145,6 +150,23 @@ export default class CachyBuilderClient {
     return data.data;
   }
 
+  public async listRebuildPackages(clientHeaders = new Headers()) {
+    const response = await this._fetcher<RebuildPackageList>(
+      'rebuild-status',
+      clientHeaders,
+      APIVersion.V2,
+      {},
+      ResponseType.JSON
+    );
+    const data = RebuildPackageListSchema.safeParse(response);
+    if (!data.success) {
+      throw new Error(
+        `Invalid package list response: ${data.error.issues.map(issue => issue.message).join(', ')}`
+      );
+    }
+    return data.data;
+  }
+
   public async login(
     loginRequest: LoginRequest,
     clientHeaders = new Headers(),
@@ -223,6 +245,40 @@ export default class CachyBuilderClient {
         (_, i) => data[i].success
       ),
     };
+  }
+
+  public async searchPackages(
+    query: SearchPackagesQuery,
+    clientHeaders = new Headers()
+  ) {
+    const requestQuery = new URLSearchParams();
+    if (query.march_filter?.length) {
+      requestQuery.set('march_filter', query.march_filter.join(','));
+    }
+    if (query.repo_filter?.length) {
+      requestQuery.set('repo_filter', query.repo_filter.join(','));
+    }
+    if (query.status_filter?.length) {
+      requestQuery.set('status_filter', query.status_filter.join(','));
+    }
+    if (query.search) {
+      requestQuery.set('search', query.search);
+    }
+
+    const response = await this._fetcher<PackageList>(
+      `packages-search?${requestQuery.toString()}`,
+      clientHeaders,
+      APIVersion.V1,
+      {},
+      ResponseType.JSON
+    );
+    const data = PackageListSchema.safeParse(response);
+    if (!data.success) {
+      throw new Error(
+        `Invalid package list response: ${data.error.issues.map(issue => issue.message).join(', ')}`
+      );
+    }
+    return data.data;
   }
 
   public updateServer(server: string): void {

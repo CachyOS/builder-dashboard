@@ -16,8 +16,8 @@ import {
 } from '@/components/ui/select';
 
 interface DataTablePaginationProps<TData> {
-  onPageChange: (pageIndex: number) => void;
-  onPageSizeChange: (pageSize: number) => void;
+  onPageChange?: (pageIndex: number) => void;
+  onPageSizeChange?: (pageSize: number) => void;
   table: Table<TData>;
 }
 
@@ -42,7 +42,7 @@ export function DataTablePagination<TData>({
           <p className="text-sm font-medium">Rows per page</p>
           <Select
             onValueChange={value => {
-              onPageSizeChange(Number(value));
+              onPageSizeChange?.(Number(value));
               table.setPageSize(Number(value));
             }}
             value={`${table.getState().pagination.pageSize}`}
@@ -69,7 +69,7 @@ export function DataTablePagination<TData>({
             disabled={!table.getCanPreviousPage()}
             onClick={() => {
               table.setPageIndex(0);
-              onPageChange(0);
+              onPageChange?.(0);
             }}
             variant="outline"
           >
@@ -80,7 +80,7 @@ export function DataTablePagination<TData>({
             className="h-8 w-8 p-0"
             disabled={!table.getCanPreviousPage()}
             onClick={() => {
-              onPageChange(table.getState().pagination.pageIndex - 1);
+              onPageChange?.(table.getState().pagination.pageIndex - 1);
               table.previousPage();
             }}
             variant="outline"
@@ -92,7 +92,7 @@ export function DataTablePagination<TData>({
             className="h-8 w-8 p-0"
             disabled={!table.getCanNextPage()}
             onClick={() => {
-              onPageChange(table.getState().pagination.pageIndex + 1);
+              onPageChange?.(table.getState().pagination.pageIndex + 1);
               table.nextPage();
             }}
             variant="outline"
@@ -104,7 +104,7 @@ export function DataTablePagination<TData>({
             className="hidden h-8 w-8 p-0 lg:flex"
             disabled={!table.getCanNextPage()}
             onClick={() => {
-              onPageChange(table.getPageCount() - 1);
+              onPageChange?.(table.getPageCount() - 1);
               table.setPageIndex(table.getPageCount() - 1);
             }}
             variant="outline"

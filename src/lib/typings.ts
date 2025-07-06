@@ -66,6 +66,20 @@ export const BasePackageSchema = z.object({
 
 export type BasePackage = z.infer<typeof BasePackageSchema>;
 
+export const RebuildPackageSchema = BasePackageSchema.extend({
+  status: z.enum(
+    PackageStatus,
+    `Status must be one of: ${packageStatusValues.join(', ')}`
+  ),
+  updated: z.number('Updated must be a positive integer').positive(),
+});
+
+export type RebuildPackage = z.infer<typeof RebuildPackageSchema>;
+
+export const RebuildPackageListSchema = z.array(RebuildPackageSchema);
+
+export type RebuildPackageList = z.infer<typeof RebuildPackageListSchema>;
+
 export const BasePackageWithName = BasePackageSchema.extend({
   pkgname: z.string(),
 });
@@ -84,15 +98,9 @@ export const PackageSchema = BasePackageWithName.extend({
 
 export type Package = z.infer<typeof PackageSchema>;
 
-export const RebuildPackageSchema = BasePackageWithName.extend({
-  status: z.enum(
-    PackageStatus,
-    `Status must be one of: ${packageStatusValues.join(', ')}`
-  ),
-  updated: z.number('Updated must be a positive integer').positive(),
-});
+export const PackageListSchema = z.array(PackageSchema);
 
-export type RebuildPackage = z.infer<typeof RebuildPackageSchema>;
+export type PackageList = z.infer<typeof PackageListSchema>;
 
 export const GenericErrorResponseSchema = z.strictObject({
   code: z.string().min(3).max(3),
@@ -121,49 +129,59 @@ export const LoginResponseSchema = z.strictObject({
 
 export type LoginResponse = z.infer<typeof LoginResponseSchema>;
 
-export const ListPackagesQuerySchema = z
-  .strictObject({
-    current_page: z
-      .number('Current page must be a positive integer')
-      .positive()
-      .default(1)
-      .optional(),
-    march_filter: z
-      .array(
-        z.enum(
-          PackageMArch,
-          `Architecture filter must be one of: ${packageMArchValues.join(', ')}`
-        )
+export const BasePackagesQuerySchema = z.strictObject({
+  march_filter: z
+    .array(
+      z.enum(
+        PackageMArch,
+        `Architecture filter must be one of: ${packageMArchValues.join(', ')}`
       )
-      .optional(),
-    page_size: z
-      .number('Page size must be a positive integer')
-      .positive()
-      .default(20)
-      .optional(),
-    repo_filter: z
-      .array(
-        z.enum(
-          PackageRepo,
-          `Repository filter must be one of: ${Object.values(PackageRepo).join(', ')}`
-        )
+    )
+    .optional(),
+  repo_filter: z
+    .array(
+      z.enum(
+        PackageRepo,
+        `Repository filter must be one of: ${Object.values(PackageRepo).join(', ')}`
       )
-      .optional(),
-    status_filter: z
-      .array(
-        z.enum(
-          PackageStatus,
-          `Status filter must be one of: ${Object.values(PackageStatus).join(', ')}`
-        )
+    )
+    .optional(),
+  status_filter: z
+    .array(
+      z.enum(
+        PackageStatus,
+        `Status filter must be one of: ${Object.values(PackageStatus).join(', ')}`
       )
-      .optional(),
-  })
-  .optional();
+    )
+    .optional(),
+});
+
+export const SearchPackagesQuerySchema = BasePackagesQuerySchema.extend({
+  search: z
+    .string()
+    .min(1, 'Search query must be at least 1 character long')
+    .max(256, 'Search query must be at most 256 characters long'),
+});
+
+export type SearchPackagesQuery = z.infer<typeof SearchPackagesQuerySchema>;
+
+export const ListPackagesQuerySchema = BasePackagesQuerySchema.extend({
+  current_page: z
+    .number('Current page must be a positive integer')
+    .positive()
+    .default(1)
+    .optional(),
+  page_size: z
+    .number('Page size must be a positive integer')
+    .positive()
+    .default(20)
+    .optional(),
+});
 
 export type ListPackagesQuery = z.infer<typeof ListPackagesQuerySchema>;
 
 export const ListPackageResponseSchema = z.strictObject({
-  packages: z.array(PackageSchema),
+  packages: PackageListSchema,
   total_packages: z
     .number('Total packages must be a positive integer')
     .positive(),

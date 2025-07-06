@@ -9,9 +9,11 @@ import {
   getPaginationRowModel,
   getSortedRowModel,
   SortingState,
+  Table as TableType,
   useReactTable,
   VisibilityState,
 } from '@tanstack/react-table';
+import {LucideIcon} from 'lucide-react';
 import * as React from 'react';
 
 import {DataTablePagination} from '@/components/ui/data-table-pagination';
@@ -28,23 +30,28 @@ import {
 
 interface DataTableProps<TData, TValue> {
   columns: ColumnDef<TData, TValue>[];
+  customFilters?: ((table: TableType<TData>) => React.ReactNode)[];
   data: TData[];
-  filters?: {id: string; placeholder?: string}[];
+  filters?: {icon?: LucideIcon; id: string; placeholder?: string}[];
   fullWidth?: boolean;
+  initialSortingState?: SortingState;
   manualFiltering?: boolean;
   manualPagination?: boolean;
-  onPageChange: (pageIndex: number) => void;
-  onPageSizeChange: (pageSize: number) => void;
+  onPageChange?: (pageIndex: number) => void;
+  onPageSizeChange?: (pageSize: number) => void;
   packageCount?: number;
   pageCount?: number;
   shrinkFirstColumn?: boolean;
+  viewOptionsAdditionalItems?: React.ReactNode;
 }
 
 export function DataTable<TData, TValue>({
   columns,
+  customFilters,
   data,
   filters,
   fullWidth = false,
+  initialSortingState = [],
   manualFiltering = false,
   manualPagination = false,
   onPageChange,
@@ -52,8 +59,11 @@ export function DataTable<TData, TValue>({
   packageCount,
   pageCount,
   shrinkFirstColumn = false,
+  viewOptionsAdditionalItems = null,
 }: Readonly<DataTableProps<TData, TValue>>) {
-  const [sorting, setSorting] = React.useState<SortingState>([]);
+  const [sorting, setSorting] =
+    React.useState<SortingState>(initialSortingState);
+  console.log(sorting);
   const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>(
     []
   );
@@ -101,7 +111,8 @@ export function DataTable<TData, TValue>({
       <div className="flex items-center py-2 gap-x-2">
         {filters?.map(x => (
           <Input
-            className="max-w-sm"
+            className="max-w-xs"
+            icon={x.icon}
             key={x.id}
             onChange={event =>
               table.getColumn(x.id)?.setFilterValue(event.target.value)
@@ -110,6 +121,10 @@ export function DataTable<TData, TValue>({
             value={(table.getColumn(x.id)?.getFilterValue() as string) ?? ''}
           />
         ))}
+        <div className="flex gap-2">
+          {customFilters?.map(filter => filter(table))}
+        </div>
+        {viewOptionsAdditionalItems}
         <div className="flex ml-auto gap-x-2">
           <DataTableViewOptions table={table} />
         </div>

@@ -10,6 +10,7 @@ import {
   ListPackagesQuery,
   LoginRequest,
   LoginRequestSchema,
+  SearchPackagesQuery,
 } from '@/lib/typings';
 
 export async function changeServer(serverName: string) {
@@ -105,6 +106,23 @@ export async function listPackages(query?: ListPackagesQuery) {
   }
 }
 
+export async function listRebuildPackages() {
+  const {cachyBuilderClient, session} = await getSession();
+  if (!session.isLoggedIn) {
+    return redirect('/');
+  }
+  try {
+    const packages = await cachyBuilderClient.listRebuildPackages(
+      await headers()
+    );
+    return packages;
+  } catch (error) {
+    return {
+      error: `Failed to list packages: ${error instanceof Error ? error.message : 'Unknown error'}`,
+    };
+  }
+}
+
 export async function login(loginRequest: LoginRequest) {
   const data = LoginRequestSchema.safeParse(loginRequest);
   if (!data.success) {
@@ -164,4 +182,22 @@ export async function logout() {
   const {session} = await getSession();
   session.destroy();
   return redirect('/');
+}
+
+export async function searchPackages(query: SearchPackagesQuery) {
+  const {cachyBuilderClient, session} = await getSession();
+  if (!session.isLoggedIn) {
+    return redirect('/');
+  }
+  try {
+    const packages = await cachyBuilderClient.searchPackages(
+      query,
+      await headers()
+    );
+    return packages;
+  } catch (error) {
+    return {
+      error: `Failed to list packages: ${error instanceof Error ? error.message : 'Unknown error'}`,
+    };
+  }
 }

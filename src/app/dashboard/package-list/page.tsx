@@ -1,16 +1,18 @@
 'use client';
 
 import {ColumnDef} from '@tanstack/react-table';
-import {Ellipsis} from 'lucide-react';
-import {useEffect, useState} from 'react';
+import {Ellipsis, Logs, RotateCcw, Search, SquareTerminal} from 'lucide-react';
+import {Fragment, useCallback, useEffect, useState} from 'react';
 import {toast} from 'sonner';
+import {useDebounce} from 'use-debounce';
 
-import {listPackages} from '@/app/actions';
+import {listPackages, searchPackages} from '@/app/actions';
 import Loader from '@/components/loader';
 import {Badge} from '@/components/ui/badge';
 import {Button} from '@/components/ui/button';
 import {Card} from '@/components/ui/card';
 import {Checkbox} from '@/components/ui/checkbox';
+import {ComboBox} from '@/components/ui/combobox';
 import {DataTable} from '@/components/ui/data-table';
 import {DataTableColumnHeader} from '@/components/ui/data-table-column-header';
 import {
@@ -20,8 +22,18 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import {Input} from '@/components/ui/input';
 import {useSidebar} from '@/components/ui/sidebar';
-import {ListPackageResponse, Package} from '@/lib/typings';
+import {
+  ListPackageResponse,
+  Package,
+  PackageMArch,
+  packageMArchValues,
+  PackageRepo,
+  packageRepoValues,
+  PackageStatus,
+  packageStatusValues,
+} from '@/lib/typings';
 import {packageStatusToIcon} from '@/lib/utils';
 
 const columns: ColumnDef<Package>[] = [
@@ -59,6 +71,15 @@ const columns: ColumnDef<Package>[] = [
       <DataTableColumnHeader column={column} title="Name" />
     ),
     id: 'name',
+  },
+  {
+    cell: ({row}) => (
+      <span className="font-medium">{row.original.repository}</span>
+    ),
+    header: ({column}) => (
+      <DataTableColumnHeader column={column} title="Repository" />
+    ),
+    id: 'repository',
   },
   {
     cell: ({row}) => <span className="font-medium">{row.original.march}</span>,
@@ -126,12 +147,17 @@ const columns: ColumnDef<Package>[] = [
             <span className="sr-only">Open menu</span>
           </Button>
         </DropdownMenuTrigger>
-        <DropdownMenuContent align="end" className="w-32">
-          <DropdownMenuItem>Edit</DropdownMenuItem>
-          <DropdownMenuItem>Make a copy</DropdownMenuItem>
-          <DropdownMenuItem>Favorite</DropdownMenuItem>
+        <DropdownMenuContent align="end" className="max-w-48">
+          <DropdownMenuItem variant="destructive">
+            <RotateCcw /> Rebuild
+          </DropdownMenuItem>
           <DropdownMenuSeparator />
-          <DropdownMenuItem variant="destructive">Delete</DropdownMenuItem>
+          <DropdownMenuItem>
+            <SquareTerminal /> Get Logs
+          </DropdownMenuItem>
+          <DropdownMenuItem>
+            <Logs /> Get Raw Logs
+          </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>
     ),
@@ -145,11 +171,60 @@ export default function PackageListPage() {
   const [error, setError] = useState<null | string>(null);
   const [pageSize, setPageSize] = useState(20);
   const [currentPage, setCurrentPage] = useState(1);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [debouncedSearchQuery] = useDebounce(searchQuery, 800);
+  const [manual, setManual] = useState(true);
+  const [marchFilter, setMarchFilter] = useState(packageMArchValues);
+  const [repoFilter, setRepoFilter] = useState(packageRepoValues);
+  const [statusFilter, setStatusFilter] = useState(packageStatusValues);
+
+  const addMarchFilter = useCallback(
+    (march: PackageMArch) => {
+      if (!marchFilter.includes(march)) {
+        setMarchFilter(prev => [...prev, march]);
+      }
+    },
+    [marchFilter]
+  );
+  const removeMarchFilter = useCallback((march: PackageMArch) => {
+    setMarchFilter(prev => prev.filter(m => m !== march));
+  }, []);
+
+  const addRepoFilter = useCallback(
+    (repo: PackageRepo) => {
+      if (!repoFilter.includes(repo)) {
+        setRepoFilter(prev => [...prev, repo]);
+      }
+    },
+    [repoFilter]
+  );
+  const removeRepoFilter = useCallback((repo: PackageRepo) => {
+    setRepoFilter(prev => prev.filter(r => r !== repo));
+  }, []);
+
+  const addStatusFilter = useCallback(
+    (status: PackageStatus) => {
+      if (!statusFilter.includes(status)) {
+        setStatusFilter(prev => [...prev, status]);
+      }
+    },
+    [statusFilter]
+  );
+  const removeStatusFilter = useCallback((status: PackageStatus) => {
+    setStatusFilter(prev => prev.filter(s => s !== status));
+  }, []);
+
   useEffect(() => {
     setError(null);
+    if (debouncedSearchQuery) {
+      return;
+    }
     listPackages({
       current_page: currentPage,
+      march_filter: marchFilter,
       page_size: pageSize,
+      repo_filter: repoFilter,
+      status_filter: statusFilter,
     })
       .then(response => {
         if ('error' in response && response.error) {
@@ -160,6 +235,7 @@ export default function PackageListPage() {
           });
         }
         if ('packages' in response) {
+          setManual(true);
           setData(response);
         }
       })
@@ -170,20 +246,117 @@ export default function PackageListPage() {
           duration: Infinity,
         });
       });
-  }, [activeServer, currentPage, pageSize]);
+  }, [
+    activeServer,
+    currentPage,
+    debouncedSearchQuery,
+    marchFilter,
+    pageSize,
+    repoFilter,
+    statusFilter,
+  ]);
+
+  useEffect(() => {
+    setError(null);
+    if (debouncedSearchQuery) {
+      searchPackages({
+        march_filter: marchFilter,
+        repo_filter: repoFilter,
+        search: debouncedSearchQuery,
+        status_filter: statusFilter,
+      }).then(response => {
+        if ('error' in response && response.error) {
+          setError(response.error);
+          toast.error(`Failed to search packages: ${response.error}`, {
+            closeButton: true,
+            duration: Infinity,
+          });
+        } else if (Array.isArray(response)) {
+          setManual(false);
+          setData({
+            packages: response,
+            total_packages: response.length,
+            total_pages: 1,
+          });
+        }
+      });
+    }
+  }, [debouncedSearchQuery, marchFilter, repoFilter, statusFilter]);
+
   return (
     <Card className="flex h-full w-full items-center justify-center p-2">
       {data ? (
         <DataTable
           columns={columns}
           data={data.packages}
-          manualFiltering
-          manualPagination
+          manualFiltering={manual}
+          manualPagination={manual}
           onPageChange={pageIndex => setCurrentPage(pageIndex + 1)}
           onPageSizeChange={pageSize => setPageSize(pageSize)}
-          packageCount={data.total_packages}
-          pageCount={data.total_pages}
+          packageCount={manual ? data.total_packages : undefined}
+          pageCount={manual ? data.total_pages : undefined}
           shrinkFirstColumn
+          viewOptionsAdditionalItems={
+            <Fragment>
+              <Input
+                className="max-w-xs w-full"
+                icon={Search}
+                id="package-search"
+                onChange={e => setSearchQuery(e.target.value)}
+                placeholder="Search packages..."
+                type="text"
+                value={searchQuery}
+              />
+              <div className="flex gap-2">
+                <div className="flex">
+                  <ComboBox
+                    addItem={addMarchFilter}
+                    items={packageMArchValues}
+                    noSelectedItemsText="No architecture selected"
+                    removeItem={removeMarchFilter}
+                    searchNoResultsText="No architectures found"
+                    searchPlaceholder="Search architectures..."
+                    selectedItems={marchFilter}
+                    selectedItemsText={count =>
+                      count > 1
+                        ? 'architectures selected'
+                        : 'architecture selected'
+                    }
+                  />
+                </div>
+                <div className="flex">
+                  <ComboBox
+                    addItem={addRepoFilter}
+                    items={packageRepoValues}
+                    noSelectedItemsText="No repository selected"
+                    removeItem={removeRepoFilter}
+                    searchNoResultsText="No repositories found"
+                    searchPlaceholder="Search repositories..."
+                    selectedItems={repoFilter}
+                    selectedItemsText={count =>
+                      count > 1
+                        ? 'repositories selected'
+                        : 'repository selected'
+                    }
+                  />
+                </div>
+                <div className="flex">
+                  <ComboBox
+                    addItem={addStatusFilter}
+                    items={packageStatusValues}
+                    noSelectedItemsText="No status selected"
+                    removeItem={removeStatusFilter}
+                    searchNoResultsText="No statuses found"
+                    searchPlaceholder="Search statuses..."
+                    selectedItems={statusFilter}
+                    selectedItemsText={count =>
+                      count > 1 ? 'statuses selected' : 'status selected'
+                    }
+                  />
+                </div>
+              </div>
+            </Fragment>
+          }
         />
       ) : (
         <Loader animate text={error ?? 'Loading package list...'} />
