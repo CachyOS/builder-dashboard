@@ -1,22 +1,17 @@
-import js from '@eslint/js';
-import next from '@next/eslint-plugin-next';
+import {FlatCompat} from '@eslint/eslintrc';
 import perfectionist from 'eslint-plugin-perfectionist';
 import eslintPluginPrettierRecommended from 'eslint-plugin-prettier/recommended';
-import tsEslint from 'typescript-eslint';
+import {dirname} from 'path';
+import {fileURLToPath} from 'url';
 
-export default tsEslint.config(
-  js.configs.recommended,
+const compat = new FlatCompat({
+  baseDirectory: dirname(fileURLToPath(import.meta.url)),
+});
+
+const eslintConfig = [
+  ...compat.extends('next/core-web-vitals', 'next/typescript'),
   perfectionist.configs['recommended-natural'],
   eslintPluginPrettierRecommended,
-  ...tsEslint.configs.recommended,
-  {
-    files: ['./**/*.ts', './**/*.tsx'],
-    plugins: {
-      '@next/next': next,
-    },
-    rules: {
-      'no-unused-vars': 'warn',
-      ...next.configs.recommended.rules,
-    },
-  }
-);
+];
+
+export default eslintConfig;

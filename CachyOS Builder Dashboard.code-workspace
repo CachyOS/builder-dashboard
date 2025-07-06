@@ -15,9 +15,12 @@
 			"QPKG",
 			"remixicon",
 			"rxdb",
+			"scrollback",
+			"sonner",
 			"toastify",
 			"Upsert",
-			"webgl"
+			"webgl",
+			"ZNVER"
 		]
 	}
 }
