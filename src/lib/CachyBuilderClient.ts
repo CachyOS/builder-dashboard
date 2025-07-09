@@ -13,6 +13,10 @@ import {
   PackageList,
   PackageListSchema,
   PackageMArch,
+  PackageStatsByMonthList,
+  PackageStatsByMonthListSchema,
+  PackageStatsList,
+  PackageStatsListSchema,
   RebuildPackageList,
   RebuildPackageListSchema,
   ResponseType,
@@ -145,6 +149,40 @@ export default class CachyBuilderClient {
     if (!data.success) {
       throw new Error(
         `Invalid package list response: ${data.error.issues.map(issue => issue.message).join(', ')}`
+      );
+    }
+    return data.data;
+  }
+
+  public async listPackageStatsByCategory(clientHeaders = new Headers()) {
+    const response = await this._fetcher<PackageStatsList>(
+      `packages-stats?stat_type=category`,
+      clientHeaders,
+      APIVersion.V1,
+      {},
+      ResponseType.JSON
+    );
+    const data = PackageStatsListSchema.safeParse(response);
+    if (!data.success) {
+      throw new Error(
+        `Invalid package stats response: ${data.error.issues.map(issue => issue.message).join(', ')}`
+      );
+    }
+    return data.data;
+  }
+
+  public async listPackageStatsByMonth(clientHeaders = new Headers()) {
+    const response = await this._fetcher<PackageStatsByMonthList>(
+      `packages-stats?stat_type=month`,
+      clientHeaders,
+      APIVersion.V1,
+      {},
+      ResponseType.JSON
+    );
+    const data = PackageStatsByMonthListSchema.safeParse(response);
+    if (!data.success) {
+      throw new Error(
+        `Invalid monthly package stats response: ${data.error.issues.map(issue => issue.message).join(', ')}`
       );
     }
     return data.data;

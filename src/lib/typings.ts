@@ -21,6 +21,11 @@ export enum PackageRepo {
 
 export const packageRepoValues = Object.values(PackageRepo);
 
+export enum PackageStatsType {
+  CATEGORY = 'category',
+  MONTH = 'month',
+}
+
 export enum PackageStatus {
   BUILDING = 'BUILDING',
   DONE = 'DONE',
@@ -200,3 +205,32 @@ export const UserProfileSchema = z.strictObject({
 });
 
 export type UserProfile = z.infer<typeof UserProfileSchema>;
+
+export const PackageStatsListSchema = z.array(
+  z.object({
+    package_count: z.number(),
+    status_name: z.enum(
+      PackageStatus,
+      `Status must be one of: ${packageStatusValues.join(', ')}`
+    ),
+  })
+);
+
+export type PackageStatsList = z.infer<typeof PackageStatsListSchema>;
+
+export const PackageStatsByMonthListSchema = z.array(
+  z.object({
+    package_count: z.number(),
+    reporting_month: z
+      .number('Reporting month must be an positive integer')
+      .positive(),
+    status_name: z.enum(
+      PackageStatus,
+      `Status must be one of: ${packageStatusValues.join(', ')}`
+    ),
+  })
+);
+
+export type PackageStatsByMonthList = z.infer<
+  typeof PackageStatsByMonthListSchema
+>;

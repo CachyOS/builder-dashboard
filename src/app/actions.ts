@@ -10,6 +10,7 @@ import {
   ListPackagesQuery,
   LoginRequest,
   LoginRequestSchema,
+  PackageStatsType,
   SearchPackagesQuery,
 } from '@/lib/typings';
 
@@ -41,6 +42,34 @@ export async function getAccessibleServers() {
     description: token.description,
     name: token.name,
   }));
+}
+
+export async function getPackageStats(
+  type: PackageStatsType = PackageStatsType.CATEGORY
+) {
+  const {cachyBuilderClient, session} = await getSession();
+  if (!session.isLoggedIn) {
+    return redirect('/');
+  }
+  try {
+    const stats =
+      type === 'month'
+        ? await cachyBuilderClient.listPackageStatsByMonth(await headers())
+        : await cachyBuilderClient.listPackageStatsByCategory(await headers());
+    if (type === 'month' && Array.isArray(stats)) {
+      return stats.map(stat => ({
+        ...stat,
+        reporting_month: new Date(stat.reporting_month * 1000)
+          .toISOString()
+          .slice(0, 7),
+      }));
+    }
+    return stats;
+  } catch (error) {
+    return {
+      error: `Failed to get package stats: ${error instanceof Error ? error.message : 'Unknown error'}`,
+    };
+  }
 }
 
 export async function getSession() {
