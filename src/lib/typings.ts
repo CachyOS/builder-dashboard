@@ -38,6 +38,14 @@ export enum PackageStatus {
 
 export const packageStatusValues = Object.values(PackageStatus);
 
+export enum RepoActionType {
+  ADDITION = 'ADDITION',
+  REMOVAL = 'REMOVAL',
+  UNKNOWN = 'UNKNOWN',
+}
+
+export const repoActionTypeValues = Object.values(RepoActionType);
+
 export enum ResponseType {
   JSON = 'json',
   RAW = 'raw',
@@ -234,3 +242,62 @@ export const PackageStatsByMonthListSchema = z.array(
 export type PackageStatsByMonthList = z.infer<
   typeof PackageStatsByMonthListSchema
 >;
+
+export const RepoActionSchema = z.object({
+  action_type: z.enum(
+    RepoActionType,
+    `Action type must be one of: ${repoActionTypeValues.join(', ')}`
+  ),
+  march: z.enum(
+    PackageMArch,
+    `Architecture must be one of: ${packageMArchValues.join(', ')}`
+  ),
+  packages: z.string(),
+  repository: z.string(),
+  /*enum(
+    PackageRepo,
+    `Repository must be one of: ${packageRepoValues.join(', ')}`
+  ),*/
+  status: z.boolean(),
+  updated: z.number('Updated must be an positive integer').positive(),
+});
+
+export type RepoAction = z.infer<typeof RepoActionSchema>;
+
+export const RepoActionListSchema = z.array(RepoActionSchema);
+
+export type RepoActionList = z.infer<typeof RepoActionListSchema>;
+
+export const ListRepoActionsQuerySchema = z.strictObject({
+  current_page: z
+    .number('Current page must be a positive integer')
+    .positive()
+    .default(1)
+    .optional(),
+  march: z
+    .enum(
+      PackageMArch,
+      `Architecture must be one of: ${packageMArchValues.join(', ')}`
+    )
+    .optional(),
+  page_size: z
+    .number('Page size must be a positive integer')
+    .positive()
+    .default(50)
+    .optional(),
+  repo: z
+    .enum(
+      PackageRepo,
+      `Repository must be one of: ${packageRepoValues.join(', ')}`
+    )
+    .optional(),
+});
+
+export type ListRepoActionsQuery = z.infer<typeof ListRepoActionsQuerySchema>;
+
+export const RepoActionsResponseSchema = z.strictObject({
+  actions: RepoActionListSchema,
+  total_pages: z.number('Total pages must be a positive integer').positive(),
+});
+
+export type RepoActionsResponse = z.infer<typeof RepoActionsResponseSchema>;

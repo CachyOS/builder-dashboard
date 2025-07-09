@@ -8,6 +8,7 @@ import CachyBuilderClient from '@/lib/CachyBuilderClient';
 import {defaultSession, SessionData, sessionOptions} from '@/lib/session';
 import {
   ListPackagesQuery,
+  ListRepoActionsQuery,
   LoginRequest,
   LoginRequestSchema,
   PackageStatsType,
@@ -148,6 +149,24 @@ export async function listRebuildPackages() {
   } catch (error) {
     return {
       error: `Failed to list packages: ${error instanceof Error ? error.message : 'Unknown error'}`,
+    };
+  }
+}
+
+export async function listRepoActions(query?: ListRepoActionsQuery) {
+  const {cachyBuilderClient, session} = await getSession();
+  if (!session.isLoggedIn) {
+    return redirect('/');
+  }
+  try {
+    const actions = await cachyBuilderClient.listRepoActions(
+      query,
+      await headers()
+    );
+    return actions;
+  } catch (error) {
+    return {
+      error: `Failed to list repo actions: ${error instanceof Error ? error.message : 'Unknown error'}`,
     };
   }
 }

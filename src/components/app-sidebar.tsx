@@ -34,6 +34,11 @@ const items = [
     url: '/dashboard/audit-logs',
   },
   {
+    icon: Activity,
+    name: 'Repo Actions',
+    url: '/dashboard/repo-actions',
+  },
+  {
     icon: PieChart,
     name: 'Statistics',
     url: '/dashboard/statistics',

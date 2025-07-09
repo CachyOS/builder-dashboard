@@ -6,6 +6,7 @@ import {
   ListPackageResponse,
   ListPackageResponseSchema,
   ListPackagesQuery,
+  ListRepoActionsQuery,
   LoginRequest,
   LoginRequestSchema,
   LoginResponse,
@@ -19,6 +20,8 @@ import {
   PackageStatsListSchema,
   RebuildPackageList,
   RebuildPackageListSchema,
+  RepoActionsResponse,
+  RepoActionsResponseSchema,
   ResponseType,
   SearchPackagesQuery,
   UserProfile,
@@ -200,6 +203,42 @@ export default class CachyBuilderClient {
     if (!data.success) {
       throw new Error(
         `Invalid package list response: ${data.error.issues.map(issue => issue.message).join(', ')}`
+      );
+    }
+    return data.data;
+  }
+
+  public async listRepoActions(
+    query?: ListRepoActionsQuery,
+    clientHeaders = new Headers()
+  ) {
+    const requestQuery = new URLSearchParams();
+    if (query) {
+      if (query.march) {
+        requestQuery.set('march', query.march);
+      }
+      if (query.repo) {
+        requestQuery.set('repo', query.repo);
+      }
+      if (query.current_page) {
+        requestQuery.set('current_page', query.current_page.toString());
+      }
+      if (query.page_size) {
+        requestQuery.set('page_size', query.page_size.toString());
+      }
+    }
+
+    const response = await this._fetcher<RepoActionsResponse>(
+      `repo-actions?${requestQuery.toString()}`,
+      clientHeaders,
+      APIVersion.V1,
+      {},
+      ResponseType.JSON
+    );
+    const data = RepoActionsResponseSchema.safeParse(response);
+    if (!data.success) {
+      throw new Error(
+        `Invalid repo actions response: ${data.error.issues.map(issue => issue.message).join(', ')}`
       );
     }
     return data.data;
