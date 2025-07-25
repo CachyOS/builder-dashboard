@@ -21,6 +21,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import {useSidebar} from '@/components/ui/sidebar';
 import {
   MonthlyChartData,
   PackageStatsList,
@@ -38,17 +39,19 @@ export default function StatisticsPage() {
 }
 
 function CategoryChart() {
+  const {activeServer} = useSidebar();
   const [categoryChartData, setCategoryChartData] = useState<PackageStatsList>(
     []
   );
 
   useEffect(() => {
+    setCategoryChartData([]);
     getPackageStats(PackageStatsType.CATEGORY).then(response => {
       if (Array.isArray(response)) {
         setCategoryChartData(response);
       }
     });
-  }, []);
+  }, [activeServer]);
 
   return (
     <Card className="pt-0">
@@ -68,6 +71,7 @@ function CategoryChart() {
 }
 
 function MonthlyChart() {
+  const {activeServer} = useSidebar();
   const [selectedYear, setSelectedYear] = useState<string>(
     new Date().getFullYear().toString()
   );
@@ -81,6 +85,9 @@ function MonthlyChart() {
     [monthlyChartData, selectedYear]
   );
   useEffect(() => {
+    setMonthlyChartData([]);
+    setYears([]);
+    setSelectedYear(new Date().getFullYear().toString());
     getPackageStats(PackageStatsType.MONTH).then(response => {
       if (Array.isArray(response)) {
         const chartDataMap = new Map<
@@ -118,7 +125,7 @@ function MonthlyChart() {
         setYears(Array.from(years).sort((a, b) => b.localeCompare(a)));
       }
     });
-  }, []);
+  }, [activeServer]);
   return (
     <Card className="pt-0">
       <CardHeader className="flex items-center gap-2 space-y-0 border-b py-5 sm:flex-row">

@@ -7,6 +7,7 @@ import {redirect} from 'next/navigation';
 import CachyBuilderClient from '@/lib/CachyBuilderClient';
 import {defaultSession, SessionData, sessionOptions} from '@/lib/session';
 import {
+  BasePackageWithNameListSchema,
   ListPackagesQuery,
   ListRepoActionsQuery,
   LoginRequest,
@@ -14,6 +15,7 @@ import {
   PackageMArch,
   PackageStatsList,
   PackageStatsType,
+  ParsedAuditLogEntry,
   ParsedRepoAction,
   ProcessedPackageStatsByMonthList,
   SearchPackagesQuery,
@@ -47,6 +49,65 @@ export async function getAccessibleServers() {
     description: token.description,
     name: token.name,
   }));
+}
+
+export async function getAuditLogs() {
+  const {cachyBuilderClient, session} = await getSession();
+  if (!session.isLoggedIn) {
+    return redirect('/');
+  }
+  try {
+    const logs = await cachyBuilderClient.getAuditLogs(await headers());
+    return logs.map(item => {
+      const description = item.event_desc;
+      const packages: ParsedAuditLogEntry[] = [];
+      if (description.startsWith('rebuild queued')) {
+        const [pkgbase, repository, march] = description
+          .replace('rebuild queued ', '')
+          .split("'-'")
+          .map(part => part.replace(/'/g, '').trim());
+        packages.push({
+          description: `Package: ${pkgbase} (${pkgbase}), Repository: ${repository}, MArch: ${march}`,
+          id: `${item.id}-1`,
+          updated: item.updated,
+          username: item.username,
+        });
+      } else if (description.startsWith('bulk rebuild queued:')) {
+        const packagesString = description
+          .replace('bulk rebuild queued: ', '')
+          .replace(/'/g, '')
+          .trim();
+        const packagesArray = BasePackageWithNameListSchema.safeParse(
+          JSON.parse(packagesString)
+        );
+        if (packagesArray.success) {
+          packagesArray.data.forEach((pkg, i) =>
+            packages.push({
+              description: `Package: ${pkg.pkgname} (${pkg.pkgbase}), Repository: ${pkg.repository}, MArch: ${pkg.march}`,
+              id: `${item.id}-${i + 1}`,
+              updated: item.updated,
+              username: item.username,
+            })
+          );
+        }
+      }
+      return {
+        description:
+          packages.length > 1
+            ? `Bulk Rebuild: ${packages.length} packages`
+            : packages.shift()!.description,
+        eventName: item.event_name,
+        id: item.id,
+        packages,
+        updated: item.updated,
+        username: item.username,
+      };
+    });
+  } catch (error) {
+    return {
+      error: `Failed to get audit logs: ${error instanceof Error ? error.message : 'Unknown error'}`,
+    };
+  }
 }
 
 export async function getPackageLog(

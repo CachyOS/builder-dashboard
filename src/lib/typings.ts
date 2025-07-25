@@ -21,6 +21,13 @@ export enum PackageRepo {
 
 export const packageRepoValues = Object.values(PackageRepo);
 
+export enum AuditLogEventName {
+  BULK_QPKG_REBUILD = 'BULK_QPKG_REBUILD',
+  QPKG_REBUILD = 'QPKG_REBUILD',
+}
+
+export const auditLogEventNameValues = Object.values(AuditLogEventName);
+
 export enum PackageStatsType {
   CATEGORY = 'category',
   MONTH = 'month',
@@ -98,6 +105,12 @@ export const BasePackageWithName = BasePackageSchema.extend({
 });
 
 export type BasePackageWithName = z.infer<typeof BasePackageWithName>;
+
+export const BasePackageWithNameListSchema = z.array(BasePackageWithName);
+
+export type BasePackageWithNameList = z.infer<
+  typeof BasePackageWithNameListSchema
+>;
 
 export const PackageSchema = BasePackageWithName.extend({
   repo_version: z.string(),
@@ -333,6 +346,37 @@ export const ParsedRepoActionsResponseSchema = RepoActionsResponseSchema.extend(
 export type MonthlyChartData = (Record<PackageStatus, number> & {
   reporting_month: string;
 })[];
+
+export const AuditLogEvent = z.strictObject({
+  event_desc: z
+    .string()
+    .min(1, 'Event description must be at least 1 character long'),
+  event_name: z.enum(
+    AuditLogEventName,
+    `Event name must be one of: ${auditLogEventNameValues.join(', ')}`
+  ),
+  id: z.string().min(1, 'ID must be at least 1 character long'),
+  updated: z.number('Updated must be a positive integer').nonnegative(),
+  username: z.string().min(1, 'Username must be at least 1 character long'),
+});
+
+export type AuditLogEvent = z.infer<typeof AuditLogEvent>;
+
+export const AuditLogListSchema = z.array(AuditLogEvent);
+
+export type AuditLogList = z.infer<typeof AuditLogListSchema>;
+
+export interface ParsedAuditLogEntry {
+  description: string;
+  id: string;
+  updated: number;
+  username: string;
+}
+
+export interface ParsedAuditLogEntryWithPackages extends ParsedAuditLogEntry {
+  eventName: AuditLogEventName;
+  packages: ParsedAuditLogEntry[];
+}
 
 export type ParsedRepoActionsResponse = z.infer<
   typeof ParsedRepoActionsResponseSchema

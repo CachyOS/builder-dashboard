@@ -233,6 +233,7 @@ export default function PackageListPage() {
 
   useEffect(() => {
     setError(null);
+    setData(null);
     if (debouncedSearchQuery) {
       return;
     }

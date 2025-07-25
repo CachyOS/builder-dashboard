@@ -189,6 +189,7 @@ export default function PackageListPage() {
 
   useEffect(() => {
     setError(null);
+    setData(null);
     listRebuildPackages()
       .then(response => {
         if ('error' in response && response.error) {

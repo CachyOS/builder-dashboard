@@ -3,6 +3,8 @@ import stripAnsi from 'strip-ansi';
 
 import {
   APIVersion,
+  AuditLogList,
+  AuditLogListSchema,
   ListPackageResponse,
   ListPackageResponseSchema,
   ListPackagesQuery,
@@ -78,6 +80,23 @@ export default class CachyBuilderClient {
       token: '',
       url: s.url,
     }));
+  }
+
+  public async getAuditLogs(clientHeaders = new Headers()) {
+    const response = await this._fetcher<AuditLogList>(
+      'audit-logs',
+      clientHeaders,
+      APIVersion.V2,
+      {},
+      ResponseType.JSON
+    );
+    const data = AuditLogListSchema.safeParse(response);
+    if (!data.success) {
+      throw new Error(
+        `Invalid audit log response: ${data.error.issues.map(issue => issue.message).join(', ')}`
+      );
+    }
+    return data.data;
   }
 
   public async getPackageLog(

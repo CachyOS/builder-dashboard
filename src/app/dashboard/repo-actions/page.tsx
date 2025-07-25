@@ -142,6 +142,7 @@ export default function RepoActionsPage() {
 
   useEffect(() => {
     setError(null);
+    setData(null);
     listRepoActions({
       current_page: currentPage,
       march: marchFilter,
