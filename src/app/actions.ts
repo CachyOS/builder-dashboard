@@ -11,7 +11,11 @@ import {
   ListRepoActionsQuery,
   LoginRequest,
   LoginRequestSchema,
+  PackageMArch,
+  PackageStatsList,
   PackageStatsType,
+  ParsedRepoAction,
+  ProcessedPackageStatsByMonthList,
   SearchPackagesQuery,
 } from '@/lib/typings';
 
@@ -45,27 +49,61 @@ export async function getAccessibleServers() {
   }));
 }
 
-export async function getPackageStats(
-  type: PackageStatsType = PackageStatsType.CATEGORY
+export async function getPackageLog(
+  pkg: string,
+  march: PackageMArch,
+  strip = false
 ) {
   const {cachyBuilderClient, session} = await getSession();
   if (!session.isLoggedIn) {
     return redirect('/');
   }
   try {
-    const stats =
-      type === 'month'
-        ? await cachyBuilderClient.listPackageStatsByMonth(await headers())
-        : await cachyBuilderClient.listPackageStatsByCategory(await headers());
-    if (type === 'month' && Array.isArray(stats)) {
+    const log = await cachyBuilderClient.getPackageLog(
+      pkg,
+      march,
+      strip,
+      await headers()
+    );
+    return log;
+  } catch (error) {
+    return {
+      error: `Failed to get package log: ${error instanceof Error ? error.message : 'Unknown error'}`,
+    };
+  }
+}
+
+export async function getPackageStats(
+  type: PackageStatsType.CATEGORY
+): Promise<PackageStatsList | {error: string}>;
+
+export async function getPackageStats(
+  type: PackageStatsType.MONTH
+): Promise<ProcessedPackageStatsByMonthList | {error: string}>;
+
+export async function getPackageStats(
+  type: PackageStatsType = PackageStatsType.CATEGORY
+): Promise<
+  PackageStatsList | ProcessedPackageStatsByMonthList | {error: string}
+> {
+  const {cachyBuilderClient, session} = await getSession();
+  if (!session.isLoggedIn) {
+    return redirect('/');
+  }
+  try {
+    if (type === PackageStatsType.MONTH) {
+      const stats = await cachyBuilderClient.listPackageStatsByMonth(
+        await headers()
+      );
       return stats.map(stat => ({
         ...stat,
         reporting_month: new Date(stat.reporting_month * 1000)
           .toISOString()
           .slice(0, 7),
       }));
+    } else {
+      return cachyBuilderClient.listPackageStatsByCategory(await headers());
     }
-    return stats;
   } catch (error) {
     return {
       error: `Failed to get package stats: ${error instanceof Error ? error.message : 'Unknown error'}`,
@@ -159,10 +197,26 @@ export async function listRepoActions(query?: ListRepoActionsQuery) {
     return redirect('/');
   }
   try {
-    const actions = await cachyBuilderClient.listRepoActions(
-      query,
-      await headers()
-    );
+    const actions = await cachyBuilderClient
+      .listRepoActions(query, await headers())
+      .then(response => {
+        return {
+          ...response,
+          actions: response.actions.map(action => {
+            const parsedPackages = action.packages
+              .split(',')
+              .map(pkg => ({...action, packages: pkg.trim()}));
+            return {
+              ...action,
+              packages:
+                parsedPackages.length > 1
+                  ? `${parsedPackages.length} packages`
+                  : parsedPackages.shift()!.packages,
+              parsedPackages,
+            } as ParsedRepoAction;
+          }),
+        };
+      });
     return actions;
   } catch (error) {
     return {

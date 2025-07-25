@@ -9,7 +9,7 @@ const nextConfig: NextConfig = {
   async redirects() {
     return [
       {
-        destination: '/api/logs/:arch/:pkgbase',
+        destination: '/api/logs/:march/:pkgbase',
         has: [
           {
             key: 'raw',
@@ -17,7 +17,7 @@ const nextConfig: NextConfig = {
           },
         ],
         permanent: false,
-        source: '/logs/:arch/:pkgbase',
+        source: '/dashboard/logs/:march/:pkgbase',
       },
       {
         destination: '/dashboard/package-list',

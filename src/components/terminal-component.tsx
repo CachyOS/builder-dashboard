@@ -9,6 +9,7 @@ import styles from 'ansi-styles';
 import {ArrowDownIcon, ArrowUpIcon, SearchIcon} from 'lucide-react';
 import {useEffect, useRef, useState} from 'react';
 
+import {getPackageLog} from '@/app/actions';
 import Loader from '@/components/loader';
 import {Input} from '@/components/ui/input';
 import {useFindShortcutListener} from '@/hooks/use-find-shortcut-listener';
@@ -119,7 +120,18 @@ export default function TerminalComponent({
         }
         return true;
       });
-      getPackageLog(pkgbase, march, true).then(log =>
+      getPackageLog(pkgbase, march, true).then(log => {
+        if (typeof log === 'object' && 'error' in log) {
+          terminal.write(
+            `${styles.redBright.open}Error: ${log.error}${styles.redBright.close}\n`
+          );
+          setTextLoaded(true);
+          fitAddon.fit();
+          inputRef.current?.addEventListener('input', searchEvent);
+          arrowUpRef.current?.addEventListener('click', arrowUpEvent);
+          arrowDownRef.current?.addEventListener('click', searchEvent);
+          return;
+        }
         terminal.write(
           log
             .replace(
@@ -159,8 +171,8 @@ export default function TerminalComponent({
             arrowUpRef.current?.addEventListener('click', arrowUpEvent);
             arrowDownRef.current?.addEventListener('click', searchEvent);
           }
-        )
-      );
+        );
+      });
     }
     return () => {
       if (loaded) {
@@ -192,10 +204,10 @@ export default function TerminalComponent({
           ref={inputRef}
         />
         <div ref={arrowUpRef}>
-          <ArrowUpIcon className="absolute z-10 right-8 top-2 dark:hover:bg-gray-50/25 hover:bg-gray-400/50 rounded text-tremor-content dark:text-white" />
+          <ArrowUpIcon className="absolute z-10 right-10 mt-2 dark:hover:bg-gray-50/25 hover:bg-gray-400/50 rounded text-tremor-content dark:text-white" />
         </div>
         <div ref={arrowDownRef}>
-          <ArrowDownIcon className="absolute z-10 right-2 top-2 dark:hover:bg-gray-50/25 hover:bg-gray-400/50 rounded text-tremor-content dark:text-white" />
+          <ArrowDownIcon className="absolute z-10 right-5 mt-2 dark:hover:bg-gray-50/25 hover:bg-gray-400/50 rounded text-tremor-content dark:text-white" />
         </div>
       </div>
       <div

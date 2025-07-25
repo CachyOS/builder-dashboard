@@ -2,6 +2,7 @@
 
 import {ColumnDef} from '@tanstack/react-table';
 import {Ellipsis, Logs, RotateCcw, Search, SquareTerminal} from 'lucide-react';
+import Link from 'next/link';
 import {Fragment, useCallback, useEffect, useState} from 'react';
 import {toast} from 'sonner';
 import {useDebounce} from 'use-debounce';
@@ -135,7 +136,7 @@ const columns: ColumnDef<Package>[] = [
     id: 'updated at',
   },
   {
-    cell: () => (
+    cell: ({row}) => (
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
           <Button
@@ -152,11 +153,27 @@ const columns: ColumnDef<Package>[] = [
             <RotateCcw /> Rebuild
           </DropdownMenuItem>
           <DropdownMenuSeparator />
-          <DropdownMenuItem>
-            <SquareTerminal /> Get Logs
+          <DropdownMenuItem
+            disabled={row.original.status !== PackageStatus.FAILED}
+          >
+            <Link
+              className="flex items-center gap-2 w-full"
+              href={`/dashboard/logs/${row.original.march}/${row.original.pkgbase}`}
+              prefetch={false}
+            >
+              <SquareTerminal /> Get Logs
+            </Link>
           </DropdownMenuItem>
-          <DropdownMenuItem>
-            <Logs /> Get Raw Logs
+          <DropdownMenuItem
+            disabled={row.original.status !== PackageStatus.FAILED}
+          >
+            <Link
+              className="flex items-center gap-2 w-full"
+              href={`/dashboard/logs/${row.original.march}/${row.original.pkgbase}?raw=true`}
+              prefetch={false}
+            >
+              <Logs /> Get Raw Logs
+            </Link>
           </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>

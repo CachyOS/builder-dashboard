@@ -5,6 +5,7 @@ import {
   ColumnFiltersState,
   flexRender,
   getCoreRowModel,
+  getExpandedRowModel,
   getFilteredRowModel,
   getPaginationRowModel,
   getSortedRowModel,
@@ -34,6 +35,7 @@ interface DataTableProps<TData, TValue> {
   data: TData[];
   filters?: {icon?: LucideIcon; id: string; placeholder?: string}[];
   fullWidth?: boolean;
+  getSubRows?: (row: TData) => TData[] | undefined;
   initialSortingState?: SortingState;
   manualFiltering?: boolean;
   manualPagination?: boolean;
@@ -51,6 +53,7 @@ export function DataTable<TData, TValue>({
   data,
   filters,
   fullWidth = false,
+  getSubRows = () => [],
   initialSortingState = [],
   manualFiltering = false,
   manualPagination = false,
@@ -63,7 +66,6 @@ export function DataTable<TData, TValue>({
 }: Readonly<DataTableProps<TData, TValue>>) {
   const [sorting, setSorting] =
     React.useState<SortingState>(initialSortingState);
-  console.log(sorting);
   const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>(
     []
   );
@@ -74,11 +76,13 @@ export function DataTable<TData, TValue>({
     columns,
     data,
     getCoreRowModel: getCoreRowModel(),
+    getExpandedRowModel: getExpandedRowModel(),
     getFilteredRowModel: manualFiltering ? undefined : getFilteredRowModel(),
     getPaginationRowModel: manualPagination
       ? undefined
       : getPaginationRowModel(),
     getSortedRowModel: getSortedRowModel(),
+    getSubRows,
     initialState: {
       pagination: {
         pageSize: 20,

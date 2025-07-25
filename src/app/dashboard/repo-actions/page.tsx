@@ -1,6 +1,11 @@
 'use client';
 
+import {
+  IconAlertCircleFilled,
+  IconCircleCheckFilled,
+} from '@tabler/icons-react';
 import {ColumnDef} from '@tanstack/react-table';
+import {ChevronDown} from 'lucide-react';
 import {useCallback, useEffect, useState} from 'react';
 import {toast} from 'sonner';
 
@@ -8,7 +13,6 @@ import {listRepoActions} from '@/app/actions';
 import Loader from '@/components/loader';
 import {Badge} from '@/components/ui/badge';
 import {Card} from '@/components/ui/card';
-import {Checkbox} from '@/components/ui/checkbox';
 import {ComboBox} from '@/components/ui/combobox';
 import {DataTable} from '@/components/ui/data-table';
 import {DataTableColumnHeader} from '@/components/ui/data-table-column-header';
@@ -18,38 +22,41 @@ import {
   packageMArchValues,
   PackageRepo,
   packageRepoValues,
-  RepoAction,
-  RepoActionsResponse,
+  ParsedRepoAction,
+  ParsedRepoActionsResponse,
 } from '@/lib/typings';
+import {repoActionTypeToIcon} from '@/lib/utils';
 
-const columns: ColumnDef<RepoAction>[] = [
+const columns: ColumnDef<ParsedRepoAction>[] = [
   {
-    cell: ({row}) => (
-      <Checkbox
-        aria-label="Select row"
-        checked={row.getIsSelected()}
-        className="mb-2"
-        onCheckedChange={value => row.toggleSelected(!!value)}
-      />
-    ),
-    enableHiding: false,
-    enableSorting: false,
-    header: ({table}) => (
-      <Checkbox
-        aria-label="Select all"
-        checked={
-          table.getIsAllPageRowsSelected() ||
-          (table.getIsSomePageRowsSelected() && 'indeterminate')
-        }
-        className="mb-2"
-        onCheckedChange={value => table.toggleAllPageRowsSelected(!!value)}
-      />
-    ),
-    id: 'select',
+    cell: ({row}) => {
+      return row.getCanExpand() ? (
+        <button
+          className="cursor-pointer"
+          onClick={row.getToggleExpandedHandler()}
+        >
+          {row.getIsExpanded() ? (
+            <ChevronDown className="h-4 w-4" />
+          ) : (
+            <ChevronDown className="h-4 w-4 rotate-270" />
+          )}
+        </button>
+      ) : (
+        ''
+      );
+    },
+    id: 'expander',
   },
   {
     cell: ({row}) => (
-      <span className="font-medium">{row.original.packages}</span>
+      <button
+        className="cursor-pointer"
+        onClick={row.getToggleExpandedHandler()}
+      >
+        <span className={row.depth === 1 ? 'font-medium ml-8' : 'font-medium'}>
+          {row.original.packages}
+        </span>
+      </button>
     ),
     header: ({column}) => (
       <DataTableColumnHeader column={column} title="Packages" />
@@ -58,7 +65,10 @@ const columns: ColumnDef<RepoAction>[] = [
   },
   {
     cell: ({row}) => (
-      <span className="font-medium">{row.original.action_type}</span>
+      <Badge className="text-muted-foreground px-1.5" variant="outline">
+        {repoActionTypeToIcon(row.original.action_type)}{' '}
+        {row.original.action_type}
+      </Badge>
     ),
     header: ({column}) => (
       <DataTableColumnHeader column={column} title="Action" />
@@ -67,10 +77,12 @@ const columns: ColumnDef<RepoAction>[] = [
   },
   {
     cell: ({row}) => (
-      <Badge
-        className="text-muted-foreground px-1.5"
-        variant={row.original.status ? 'default' : 'destructive'}
-      >
+      <Badge className="text-muted-foreground px-1.5" variant="outline">
+        {row.original.status ? (
+          <IconCircleCheckFilled className="fill-green-500 size-5" />
+        ) : (
+          <IconAlertCircleFilled className="fill-red-500 size-5" />
+        )}
         {row.original.status ? 'Success' : 'Failed'}
       </Badge>
     ),
@@ -113,18 +125,18 @@ const columns: ColumnDef<RepoAction>[] = [
 
 export default function RepoActionsPage() {
   const {activeServer} = useSidebar();
-  const [data, setData] = useState<null | RepoActionsResponse>(null);
+  const [data, setData] = useState<null | ParsedRepoActionsResponse>(null);
   const [error, setError] = useState<null | string>(null);
-  const [pageSize, setPageSize] = useState(50);
+  const [pageSize, setPageSize] = useState(20);
   const [currentPage, setCurrentPage] = useState(1);
   const [marchFilter, setMarchFilter] = useState<PackageMArch | undefined>();
   const [repoFilter, setRepoFilter] = useState<PackageRepo | undefined>();
 
-  const handleMarchFilterChange = useCallback((march: PackageMArch) => {
+  const handleMarchFilterChange = useCallback((march?: PackageMArch) => {
     setMarchFilter(march);
   }, []);
 
-  const handleRepoFilterChange = useCallback((repo: PackageRepo) => {
+  const handleRepoFilterChange = useCallback((repo?: PackageRepo) => {
     setRepoFilter(repo);
   }, []);
 
@@ -163,6 +175,7 @@ export default function RepoActionsPage() {
         <DataTable
           columns={columns}
           data={data.actions}
+          getSubRows={row => row.parsedPackages as ParsedRepoAction[]}
           manualFiltering
           manualPagination
           onPageChange={pageIndex => setCurrentPage(pageIndex + 1)}
@@ -173,23 +186,25 @@ export default function RepoActionsPage() {
             <div className="flex gap-2">
               <div className="flex">
                 <ComboBox
+                  addItem={handleMarchFilterChange}
                   items={packageMArchValues}
                   noSelectedItemsText="No architecture selected"
-                  onValueChange={handleMarchFilterChange}
+                  removeItem={() => handleMarchFilterChange()}
                   searchNoResultsText="No architectures found"
                   searchPlaceholder="Search architectures..."
-                  selectedItems={[marchFilter]}
+                  selectedItems={marchFilter ? [marchFilter] : []}
                   selectedItemsText="architecture selected"
                 />
               </div>
               <div className="flex">
                 <ComboBox
+                  addItem={handleRepoFilterChange}
                   items={packageRepoValues}
                   noSelectedItemsText="No repository selected"
-                  onValueChange={handleRepoFilterChange}
+                  removeItem={() => handleRepoFilterChange()}
                   searchNoResultsText="No repositories found"
                   searchPlaceholder="Search repositories..."
-                  selectedItems={[repoFilter]}
+                  selectedItems={repoFilter ? [repoFilter] : []}
                   selectedItemsText="repository selected"
                 />
               </div>

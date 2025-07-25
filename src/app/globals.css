@@ -142,4 +142,24 @@
   body {
     @apply bg-background text-foreground;
   }
+
+  :root {
+    --chart-1: oklch(0.646 0.222 41.116);
+    --chart-2: oklch(0.6 0.118 184.704);
+    --chart-3: oklch(0.398 0.07 227.392);
+    --chart-4: oklch(0.828 0.189 84.429);
+    --chart-5: oklch(0.769 0.188 70.08);
+    --chart-6: oklch(0.488 0.243 264.376);
+    --chart-7: oklch(0.696 0.17 162.48);
+  }
+
+  .dark {
+    --chart-1: oklch(0.68 0.15 237);
+    --chart-2: oklch(0.59 0.20 277);
+    --chart-3: oklch(0.66 0.21 354);
+    --chart-4: oklch(0.70 0.15 162);
+    --chart-5: oklch(0.80 0.16 86);
+    --chart-6: oklch(0.70 0.19 48);
+    --chart-7: oklch(0.71 0.02 261);
+  }
 }

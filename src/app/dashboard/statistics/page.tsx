@@ -3,7 +3,10 @@
 import {useEffect, useMemo, useState} from 'react';
 
 import {getPackageStats} from '@/app/actions';
-import {CategoryChart, MonthlyChart} from '@/components/charts';
+import {
+  CategoryStatsDonutChart,
+  MonthlyStatsAreaChart,
+} from '@/components/charts';
 import {
   Card,
   CardContent,
@@ -19,92 +22,131 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import {
-  PackageStatsByMonthList,
+  MonthlyChartData,
   PackageStatsList,
   PackageStatsType,
+  PackageStatus,
 } from '@/lib/typings';
 
 export default function StatisticsPage() {
-  const [statsByCategory, setStatsByCategory] = useState<
-    PackageStatsList | {error: string}
-  >([]);
-  const [statsByMonth, setStatsByMonth] = useState<
-    PackageStatsByMonthList | {error: string}
-  >([]);
-  const [selectedYear, setSelectedYear] = useState<string>(
-    new Date().getFullYear().toString()
+  return (
+    <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+      <CategoryChart />
+      <MonthlyChart />
+    </div>
+  );
+}
+
+function CategoryChart() {
+  const [categoryChartData, setCategoryChartData] = useState<PackageStatsList>(
+    []
   );
 
   useEffect(() => {
-    getPackageStats(PackageStatsType.CATEGORY).then(setStatsByCategory);
-    getPackageStats(PackageStatsType.MONTH).then(setStatsByMonth);
+    getPackageStats(PackageStatsType.CATEGORY).then(response => {
+      if (Array.isArray(response)) {
+        setCategoryChartData(response);
+      }
+    });
   }, []);
 
-  const years = useMemo(() => {
-    if (Array.isArray(statsByMonth)) {
-      const years = new Set(
-        statsByMonth.map(stat =>
-          new Date(stat.reporting_month).getFullYear().toString()
-        )
-      );
-      return Array.from(years);
-    }
-    return [new Date().getFullYear().toString()];
-  }, [statsByMonth]);
-
-  const filteredStatsByMonth = useMemo(() => {
-    if (Array.isArray(statsByMonth)) {
-      return statsByMonth.filter(
-        stat =>
-          new Date(stat.reporting_month).getFullYear().toString() ===
-          selectedYear
-      );
-    }
-    return [];
-  }, [statsByMonth, selectedYear]);
-
   return (
-    <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
-      <Card className="flex flex-col">
-        <CardHeader className="items-center pb-0">
-          <CardTitle>Stats by Category</CardTitle>
-        </CardHeader>
-        <CardContent className="flex-1 pb-0">
-          {Array.isArray(statsByCategory) && (
-            <CategoryChart data={statsByCategory} />
-          )}
-        </CardContent>
-      </Card>
-      <Card className="pt-0">
-        <CardHeader className="flex items-center gap-2 space-y-0 border-b py-5 sm:flex-row">
-          <div className="grid flex-1 gap-1">
-            <CardTitle>Stats by Month</CardTitle>
-            <CardDescription>
-              Showing total packages status by month
-            </CardDescription>
-          </div>
-          <Select onValueChange={setSelectedYear} value={selectedYear}>
-            <SelectTrigger
-              aria-label="Select a value"
-              className="hidden w-[160px] rounded-lg sm:ml-auto sm:flex"
-            >
-              <SelectValue placeholder="Select year" />
-            </SelectTrigger>
-            <SelectContent className="rounded-xl">
-              {years.map(year => (
-                <SelectItem className="rounded-lg" key={year} value={year}>
-                  {year}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </CardHeader>
-        <CardContent className="px-2 pt-4 sm:px-6 sm:pt-6">
-          {Array.isArray(statsByMonth) && (
-            <MonthlyChart data={filteredStatsByMonth} />
-          )}
-        </CardContent>
-      </Card>
-    </div>
+    <Card className="pt-0">
+      <CardHeader className="flex items-center gap-2 space-y-0 border-b py-5 sm:flex-row">
+        <div className="grid flex-1 gap-1">
+          <CardTitle>Stats by Month</CardTitle>
+          <CardDescription>
+            Showing total packages status by month
+          </CardDescription>
+        </div>
+      </CardHeader>
+      <CardContent>
+        <CategoryStatsDonutChart chartData={categoryChartData} />
+      </CardContent>
+    </Card>
+  );
+}
+
+function MonthlyChart() {
+  const [selectedYear, setSelectedYear] = useState<string>(
+    new Date().getFullYear().toString()
+  );
+  const [years, setYears] = useState<string[]>([]);
+  const [monthlyChartData, setMonthlyChartData] = useState<MonthlyChartData>(
+    []
+  );
+  const filteredMonthlyChartData = useMemo(
+    () =>
+      monthlyChartData.filter(x => x.reporting_month.startsWith(selectedYear)),
+    [monthlyChartData, selectedYear]
+  );
+  useEffect(() => {
+    getPackageStats(PackageStatsType.MONTH).then(response => {
+      if (Array.isArray(response)) {
+        const chartDataMap = new Map<
+          string,
+          Record<PackageStatus, number> & {
+            reporting_month: string;
+          }
+        >();
+        const years = new Set<string>();
+
+        response.forEach(item => {
+          const month = item.reporting_month;
+          if (!chartDataMap.has(month)) {
+            chartDataMap.set(month, {
+              [PackageStatus.BUILDING]: 0,
+              [PackageStatus.DONE]: 0,
+              [PackageStatus.FAILED]: 0,
+              [PackageStatus.LATEST]: 0,
+              [PackageStatus.QUEUED]: 0,
+              [PackageStatus.SKIPPED]: 0,
+              [PackageStatus.UNKNOWN]: 0,
+              reporting_month: month,
+            });
+          }
+          const statusMap = chartDataMap.get(month)!;
+          statusMap[item.status_name] = item.package_count;
+          years.add(month.slice(0, 4));
+        });
+
+        setMonthlyChartData(
+          Array.from(chartDataMap.values()).sort((a, b) =>
+            a.reporting_month.localeCompare(b.reporting_month)
+          )
+        );
+        setYears(Array.from(years).sort((a, b) => b.localeCompare(a)));
+      }
+    });
+  }, []);
+  return (
+    <Card className="pt-0">
+      <CardHeader className="flex items-center gap-2 space-y-0 border-b py-5 sm:flex-row">
+        <div className="grid flex-1 gap-1">
+          <CardTitle>Stats by Month</CardTitle>
+          <CardDescription>
+            Showing total packages status by month
+          </CardDescription>
+        </div>
+        <Select onValueChange={setSelectedYear} value={selectedYear}>
+          <SelectTrigger
+            aria-label="Select a value"
+            className="max-w-3xs rounded-lg ml-auto flex"
+          >
+            <SelectValue placeholder="Select year" />
+          </SelectTrigger>
+          <SelectContent className="rounded-xl">
+            {years.map(year => (
+              <SelectItem className="rounded-lg" key={year} value={year}>
+                {year}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </CardHeader>
+      <CardContent className="px-2 pt-4 sm:px-6 sm:pt-12">
+        <MonthlyStatsAreaChart chartData={filteredMonthlyChartData} />
+      </CardContent>
+    </Card>
   );
 }

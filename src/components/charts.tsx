@@ -1,92 +1,140 @@
 'use client';
 
-import {Area, AreaChart, CartesianGrid, Pie, PieChart, XAxis} from 'recharts';
+import {useMemo} from 'react';
+import {
+  Area,
+  AreaChart,
+  CartesianGrid,
+  Label,
+  Pie,
+  PieChart,
+  XAxis,
+} from 'recharts';
 
 import {
   ChartConfig,
+  ChartConfigValue,
   ChartContainer,
   ChartLegend,
   ChartLegendContent,
   ChartTooltip,
   ChartTooltipContent,
 } from '@/components/ui/chart';
-import {PackageStatsByMonthList, PackageStatsList} from '@/lib/typings';
+import {
+  MonthlyChartData,
+  PackageStatsList,
+  PackageStatus,
+  packageStatusValues,
+} from '@/lib/typings';
 
-interface ChartProps {
-  data: PackageStatsByMonthList | PackageStatsList;
-}
+const chartConfig: Record<PackageStatus, ChartConfigValue> = {
+  BUILDING: {
+    color: 'var(--chart-1)',
+    label: 'Building',
+  },
+  DONE: {
+    color: 'var(--chart-2)',
+    label: 'Done',
+  },
+  FAILED: {
+    color: 'var(--chart-3)',
+    label: 'Failed',
+  },
+  LATEST: {
+    color: 'var(--chart-4)',
+    label: 'Latest',
+  },
+  QUEUED: {
+    color: 'var(--chart-5)',
+    label: 'Queued',
+  },
+  SKIPPED: {
+    color: 'var(--chart-6)',
+    label: 'Skipped',
+  },
+  UNKNOWN: {
+    color: 'var(--chart-7)',
+    label: 'Unknown',
+  },
+} satisfies ChartConfig;
 
-export function CategoryChart({data}: ChartProps) {
-  const statusKeys = Array.from(
-    new Set((data as PackageStatsList).map(({status_name}) => status_name))
+export function CategoryStatsDonutChart({
+  chartData,
+}: Readonly<{chartData: PackageStatsList}>) {
+  const processedChartData = useMemo(
+    () =>
+      chartData
+        .filter(item => item.package_count > 0)
+        .map(item => ({
+          ...item,
+          fill: chartConfig[item.status_name].color,
+        })),
+    [chartData]
   );
-
-  const chartConfig = statusKeys.reduce((config, key) => {
-    config[key] = {
-      color: `var(--chart-${statusKeys.indexOf(key) + 1})`,
-      label: key,
-    };
-    return config;
-  }, {} as ChartConfig);
-
+  const totalPackages = useMemo(
+    () => chartData.reduce((acc, item) => acc + item.package_count, 0),
+    [chartData]
+  );
   return (
     <ChartContainer
-      className="[&_.recharts-pie-label-text]:fill-foreground mx-auto aspect-square max-h-[250px] pb-0"
+      className="[&_.recharts-pie-label-text]:fill-foreground mx-auto aspect-square max-h-[32rem] pb-0"
       config={chartConfig}
     >
       <PieChart>
         <ChartTooltip content={<ChartTooltipContent hideLabel />} />
         <Pie
-          data={data as PackageStatsList}
+          data={processedChartData}
           dataKey="package_count"
+          innerRadius={60}
           label
-          nameKey="status"
+          nameKey="status_name"
+          outerRadius={80}
+        >
+          {totalPackages && (
+            <Label
+              className="fill-foreground text-2xl font-bold"
+              position="center"
+              value={totalPackages}
+            />
+          )}
+        </Pie>
+        <ChartLegend
+          className="-translate-y-2 flex-wrap gap-2 *:basis-1/4 *:justify-center"
+          content={<ChartLegendContent nameKey="status_name" />}
         />
       </PieChart>
     </ChartContainer>
   );
 }
 
-export function MonthlyChart({data}: ChartProps) {
-  const transformedData = (data as PackageStatsByMonthList).reduce(
-    (acc, {package_count, reporting_month, status_name}) => {
-      const month = new Date(reporting_month).toISOString().slice(0, 7);
-      let monthData = acc.find(item => item.month === month);
-      if (!monthData) {
-        monthData = {month};
-        acc.push(monthData);
-      }
-      monthData[status_name] = package_count;
-      return acc;
-    },
-    []
-  );
-
-  const statusKeys = Array.from(
-    new Set(
-      (data as PackageStatsByMonthList).map(({status_name}) => status_name)
-    )
-  );
-
-  const chartConfig = statusKeys.reduce((config, key) => {
-    config[key] = {
-      color: `var(--chart-${statusKeys.indexOf(key) + 1})`,
-      label: key,
-    };
-    return config;
-  }, {} as ChartConfig);
-
+export function MonthlyStatsAreaChart({
+  chartData,
+}: Readonly<{
+  chartData: MonthlyChartData;
+}>) {
   return (
-    <ChartContainer
-      className="aspect-auto h-[250px] w-full"
-      config={chartConfig}
-    >
-      <AreaChart data={transformedData}>
+    <ChartContainer config={chartConfig}>
+      <AreaChart
+        accessibilityLayer
+        data={chartData}
+        margin={{
+          left: 12,
+          right: 12,
+        }}
+      >
+        <CartesianGrid vertical={false} />
+        <XAxis
+          axisLine={false}
+          dataKey="reporting_month"
+          tickLine={false}
+          tickMargin={8}
+        />
+        <ChartTooltip content={<ChartTooltipContent />} cursor={false} />
         <defs>
-          {statusKeys.map((key, index) => (
+          {packageStatusValues.map(status => (
             <linearGradient
-              id={`fill${key}`}
-              key={key}
+              id={`fill${status}`}
+              key={status}
               x1="0"
               x2="0"
               y1="0"
@@ -94,52 +142,25 @@ export function MonthlyChart({data}: ChartProps) {
             >
               <stop
                 offset="5%"
-                stopColor={`var(--chart-${index + 1})`}
+                stopColor={chartConfig[status].color}
                 stopOpacity={0.8}
               />
               <stop
                 offset="95%"
-                stopColor={`var(--chart-${index + 1})`}
+                stopColor={chartConfig[status].color}
                 stopOpacity={0.1}
               />
             </linearGradient>
           ))}
         </defs>
-        <CartesianGrid vertical={false} />
-        <XAxis
-          axisLine={false}
-          dataKey="month"
-          minTickGap={32}
-          tickFormatter={value => {
-            const date = new Date(value);
-            return date.toLocaleDateString('en-US', {
-              month: 'short',
-            });
-          }}
-          tickLine={false}
-          tickMargin={8}
-        />
-        <ChartTooltip
-          content={
-            <ChartTooltipContent
-              indicator="dot"
-              labelFormatter={value => {
-                return new Date(value).toLocaleDateString('en-US', {
-                  month: 'short',
-                });
-              }}
-            />
-          }
-          cursor={false}
-        />
-        {statusKeys.map(key => (
+        {packageStatusValues.map(status => (
           <Area
-            dataKey={key}
-            fill={`url(#fill${key})`}
-            key={key}
-            stackId="a"
-            stroke={`var(--chart-${statusKeys.indexOf(key) + 1})`}
-            type="natural"
+            dataKey={status}
+            fill={`url(#fill${status})`}
+            fillOpacity={0.4}
+            key={`monthly-chart-area-${status}`}
+            stroke={chartConfig[status].color}
+            type="bump"
           />
         ))}
         <ChartLegend content={<ChartLegendContent />} />

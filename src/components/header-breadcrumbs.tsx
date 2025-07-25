@@ -1,7 +1,7 @@
 'use client';
 
 import {usePathname} from 'next/navigation';
-import {useMemo} from 'react';
+import {Fragment, useMemo} from 'react';
 
 import {
   Breadcrumb,
@@ -13,8 +13,8 @@ import {
 
 export function HeaderBreadcrumbs() {
   const pathname = usePathname();
-  const breadCrumb = useMemo(
-    () => pathname.replace('/dashboard/', '').split('-').join(' '),
+  const breadCrumbs = useMemo(
+    () => pathname.replace('/dashboard/', '').split('-').join(' ').split('/'),
     [pathname]
   );
 
@@ -24,10 +24,16 @@ export function HeaderBreadcrumbs() {
         <BreadcrumbItem className="hidden md:block">
           <BreadcrumbPage>CachyOS Builder Dashboard</BreadcrumbPage>
         </BreadcrumbItem>
-        <BreadcrumbSeparator className="hidden md:block" />
-        <BreadcrumbItem>
-          <BreadcrumbPage className="capitalize">{breadCrumb}</BreadcrumbPage>
-        </BreadcrumbItem>
+        {breadCrumbs.map(breadCrumb => (
+          <Fragment key={breadCrumb}>
+            <BreadcrumbSeparator className="hidden md:block" />
+            <BreadcrumbItem>
+              <BreadcrumbPage className="capitalize">
+                {breadCrumb}
+              </BreadcrumbPage>
+            </BreadcrumbItem>
+          </Fragment>
+        ))}
       </BreadcrumbList>
     </Breadcrumb>
   );

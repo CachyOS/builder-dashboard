@@ -84,7 +84,7 @@ export const RebuildPackageSchema = BasePackageSchema.extend({
     PackageStatus,
     `Status must be one of: ${packageStatusValues.join(', ')}`
   ),
-  updated: z.number('Updated must be a positive integer').positive(),
+  updated: z.number('Updated must be a positive integer').nonnegative(),
 });
 
 export type RebuildPackage = z.infer<typeof RebuildPackageSchema>;
@@ -105,7 +105,7 @@ export const PackageSchema = BasePackageWithName.extend({
     PackageStatus,
     `Status must be one of: ${packageStatusValues.join(', ')}`
   ),
-  updated: z.number('Updated must be a positive integer').positive(),
+  updated: z.number('Updated must be a positive integer').nonnegative(),
   version: z.string(),
 });
 
@@ -181,12 +181,12 @@ export type SearchPackagesQuery = z.infer<typeof SearchPackagesQuerySchema>;
 export const ListPackagesQuerySchema = BasePackagesQuerySchema.extend({
   current_page: z
     .number('Current page must be a positive integer')
-    .positive()
+    .nonnegative()
     .default(1)
     .optional(),
   page_size: z
     .number('Page size must be a positive integer')
-    .positive()
+    .nonnegative()
     .default(20)
     .optional(),
 });
@@ -197,8 +197,8 @@ export const ListPackageResponseSchema = z.strictObject({
   packages: PackageListSchema,
   total_packages: z
     .number('Total packages must be a positive integer')
-    .positive(),
-  total_pages: z.number('Total pages must be a positive integer').positive(),
+    .nonnegative(),
+  total_pages: z.number('Total pages must be a positive integer').nonnegative(),
 });
 
 export type ListPackageResponse = z.infer<typeof ListPackageResponseSchema>;
@@ -208,7 +208,7 @@ export const UserProfileSchema = z.strictObject({
   display_name: z.string().nullable(),
   id: z.string().min(1, 'ID must be at least 1 character long'),
   profile_picture_url: z.string().nullable(),
-  updated: z.number('Updated must be an positive integer').positive(),
+  updated: z.number('Updated must be an positive integer').nonnegative(),
   username: z.string().min(1, 'Username must be at least 1 character long'),
 });
 
@@ -226,21 +226,41 @@ export const PackageStatsListSchema = z.array(
 
 export type PackageStatsList = z.infer<typeof PackageStatsListSchema>;
 
-export const PackageStatsByMonthListSchema = z.array(
-  z.object({
-    package_count: z.number(),
-    reporting_month: z
-      .number('Reporting month must be an positive integer')
-      .positive(),
-    status_name: z.enum(
-      PackageStatus,
-      `Status must be one of: ${packageStatusValues.join(', ')}`
-    ),
-  })
-);
+export const PackageStatsByMonth = z.object({
+  package_count: z.number(),
+  reporting_month: z
+    .number('Reporting month must be an positive integer')
+    .nonnegative(),
+  status_name: z.enum(
+    PackageStatus,
+    `Status must be one of: ${packageStatusValues.join(', ')}`
+  ),
+});
+
+export type PackageStatsByMonth = z.infer<typeof PackageStatsByMonth>;
+
+export const PackageStatsByMonthListSchema = z.array(PackageStatsByMonth);
 
 export type PackageStatsByMonthList = z.infer<
   typeof PackageStatsByMonthListSchema
+>;
+
+export const ProcessedPackageStatsByMonth = PackageStatsByMonth.extend({
+  reporting_month: z
+    .string()
+    .min(1, 'Reporting month must be a non-empty string'),
+});
+
+export type ProcessedPackageStatsByMonth = z.infer<
+  typeof ProcessedPackageStatsByMonth
+>;
+
+export const ProcessedPackageStatsByMonthListSchema = z.array(
+  ProcessedPackageStatsByMonth
+);
+
+export type ProcessedPackageStatsByMonthList = z.infer<
+  typeof ProcessedPackageStatsByMonthListSchema
 >;
 
 export const RepoActionSchema = z.object({
@@ -254,13 +274,15 @@ export const RepoActionSchema = z.object({
   ),
   packages: z.string(),
   repository: z.string(),
-  /*enum(
-    PackageRepo,
-    `Repository must be one of: ${packageRepoValues.join(', ')}`
-  ),*/
   status: z.boolean(),
-  updated: z.number('Updated must be an positive integer').positive(),
+  updated: z.number('Updated must be an positive integer').nonnegative(),
 });
+
+export const ParsedRepoActionSchema = RepoActionSchema.extend({
+  parsedPackages: z.array(RepoActionSchema),
+});
+
+export type ParsedRepoAction = z.infer<typeof ParsedRepoActionSchema>;
 
 export type RepoAction = z.infer<typeof RepoActionSchema>;
 
@@ -271,7 +293,7 @@ export type RepoActionList = z.infer<typeof RepoActionListSchema>;
 export const ListRepoActionsQuerySchema = z.strictObject({
   current_page: z
     .number('Current page must be a positive integer')
-    .positive()
+    .nonnegative()
     .default(1)
     .optional(),
   march: z
@@ -282,7 +304,7 @@ export const ListRepoActionsQuerySchema = z.strictObject({
     .optional(),
   page_size: z
     .number('Page size must be a positive integer')
-    .positive()
+    .nonnegative()
     .default(50)
     .optional(),
   repo: z
@@ -297,7 +319,21 @@ export type ListRepoActionsQuery = z.infer<typeof ListRepoActionsQuerySchema>;
 
 export const RepoActionsResponseSchema = z.strictObject({
   actions: RepoActionListSchema,
-  total_pages: z.number('Total pages must be a positive integer').positive(),
+  total_pages: z.number('Total pages must be a positive integer').nonnegative(),
 });
 
 export type RepoActionsResponse = z.infer<typeof RepoActionsResponseSchema>;
+
+export const ParsedRepoActionsResponseSchema = RepoActionsResponseSchema.extend(
+  {
+    actions: z.array(ParsedRepoActionSchema),
+  }
+);
+
+export type MonthlyChartData = (Record<PackageStatus, number> & {
+  reporting_month: string;
+})[];
+
+export type ParsedRepoActionsResponse = z.infer<
+  typeof ParsedRepoActionsResponseSchema
+>;
