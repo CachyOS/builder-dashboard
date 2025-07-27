@@ -6,13 +6,13 @@ import {PackageMArch, packageMArchValues} from '@/lib/typings';
 export async function GET(
   req: NextRequest,
   context: {
-    params: {
+    params: Promise<{
       march: PackageMArch;
       pkgbase: string;
-    };
+    }>;
   }
 ) {
-  const {march, pkgbase} = context.params;
+  const {march, pkgbase} = await context.params;
   if (!march || !pkgbase) {
     return new NextResponse('Not found', {status: 404});
   }
