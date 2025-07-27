@@ -1,3 +1,5 @@
+import Link from 'next/link';
+
 import {Avatar, AvatarFallback, AvatarImage} from '@/components/ui/avatar';
 import {
   HoverCard,
@@ -8,11 +10,13 @@ import {
 export function UsernameHoverCard({
   description,
   displayName,
+  link = false,
   profileImage,
   username,
 }: Readonly<{
   description?: null | string;
   displayName?: null | string;
+  link?: boolean;
   profileImage?: null | string;
   username: string;
 }>) {
@@ -26,9 +30,18 @@ export function UsernameHoverCard({
   return (
     <HoverCard>
       <HoverCardTrigger asChild>
-        <span className="font-medium decoration-dotted underline">
-          @{username}
-        </span>
+        {link ? (
+          <Link
+            className="font-medium decoration-dotted underline"
+            href={`/dashboard/profile/${username}`}
+          >
+            @{username}
+          </Link>
+        ) : (
+          <span className="font-medium decoration-dotted underline">
+            @{username}
+          </span>
+        )}
       </HoverCardTrigger>
       <HoverCardContent className="max-w-80 w-full shrink flex">
         <div className="flex justify-between gap-4">

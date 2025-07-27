@@ -1,12 +1,11 @@
 'use client';
 import {zodResolver} from '@hookform/resolvers/zod';
 import {Undo2} from 'lucide-react';
-import {useCallback, useEffect, useMemo, useState} from 'react';
+import {useCallback, useMemo, useState} from 'react';
 import {useForm} from 'react-hook-form';
 import {toast} from 'sonner';
 
-import {getLoggedInUser, updateProfile} from '@/app/actions';
-import Loader from '@/components/loader';
+import {updateProfile} from '@/app/actions';
 import {Avatar, AvatarFallback, AvatarImage} from '@/components/ui/avatar';
 import {Button} from '@/components/ui/button';
 import {Card, CardContent, CardHeader, CardTitle} from '@/components/ui/card';
@@ -20,7 +19,6 @@ import {
 } from '@/components/ui/form';
 import {Input} from '@/components/ui/input';
 import {Label} from '@/components/ui/label';
-import {useSidebar} from '@/components/ui/sidebar';
 import {Switch} from '@/components/ui/switch';
 import {Textarea} from '@/components/ui/textarea';
 import {UsernameHoverCard} from '@/components/username-hover-card';
@@ -30,46 +28,15 @@ import {
   UserProfile,
 } from '@/lib/typings';
 
-export default function AccountPage() {
-  const {activeServer, doRefresh} = useSidebar();
-  const [user, setUser] = useState<null | UserProfile>(null);
-  const onUserUpdate = useCallback(
-    (updatedUser: UserProfile) => {
-      setUser(updatedUser);
-      doRefresh();
-    },
-    [doRefresh]
-  );
-  useEffect(() => {
-    setUser(null);
-    getLoggedInUser(true).then(data => {
-      if ('error' in data) {
-        toast.error(data.error, {
-          closeButton: true,
-          duration: Infinity,
-        });
-      } else {
-        setUser(data);
-      }
-    });
-  }, [activeServer]);
-  return (
-    <Card className="flex min-h-full w-full items-center justify-center p-6 md:p-10">
-      <div className="w-full max-w-lg">
-        {user ? (
-          <UserAccountForm onUserUpdate={onUserUpdate} user={user} />
-        ) : (
-          <Loader animate text="Loading user profile..." />
-        )}
-      </div>
-    </Card>
-  );
-}
-
-function UserAccountForm({
+export function UserProfileForm({
+  disabled = false,
   onUserUpdate,
   user,
-}: Readonly<{onUserUpdate: (user: UserProfile) => void; user: UserProfile}>) {
+}: Readonly<{
+  disabled?: boolean;
+  onUserUpdate: (user: UserProfile) => void;
+  user: UserProfile;
+}>) {
   const [error, setError] = useState<null | string>(null);
   const [warning, setWarning] = useState<null | string>(null);
   const [submitting, setSubmitting] = useState(false);
@@ -101,7 +68,7 @@ function UserAccountForm({
 
   const onSubmit = useCallback(
     (data: NonNullableUserProfile) => {
-      if (submitting) {
+      if (submitting || disabled) {
         return;
       }
       setSubmitting(true);
@@ -146,7 +113,7 @@ function UserAccountForm({
           setSubmitting(false);
         });
     },
-    [submitting, onUserUpdate, updateAllServers]
+    [submitting, disabled, updateAllServers, onUserUpdate]
   );
 
   return (
@@ -198,7 +165,12 @@ function UserAccountForm({
                       <FormItem>
                         <FormLabel>Display Name</FormLabel>
                         <FormControl>
-                          <Input {...field} />
+                          <Input
+                            {...(disabled
+                              ? {'aria-readonly': true, disabled: true}
+                              : {})}
+                            {...field}
+                          />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -216,6 +188,9 @@ function UserAccountForm({
                           <Textarea
                             className="resize-none"
                             placeholder="Tell us a little bit about yourself!"
+                            {...(disabled
+                              ? {'aria-readonly': true, disabled: true}
+                              : {})}
                             {...field}
                           />
                         </FormControl>
@@ -233,17 +208,29 @@ function UserAccountForm({
                         <FormLabel>Profile Picture URL</FormLabel>
                         <FormControl>
                           <div className="flex items-center gap-2">
-                            <Input {...field} />
-                            <Button
-                              onClick={() =>
-                                field.onChange('/cachyos-logo.svg')
-                              }
-                              size="icon"
-                              type="button"
-                              variant="outline"
-                            >
-                              <Undo2 />
-                            </Button>
+                            <Input
+                              {...(disabled
+                                ? {'aria-readonly': true, disabled: true}
+                                : {})}
+                              {...field}
+                            />
+                            {!disabled && (
+                              <Button
+                                onClick={() => {
+                                  if (!disabled) {
+                                    field.onChange('/cachyos-logo.svg');
+                                  }
+                                }}
+                                size="icon"
+                                type="button"
+                                variant="outline"
+                                {...(disabled
+                                  ? {'aria-readonly': true, disabled: true}
+                                  : {})}
+                              >
+                                <Undo2 />
+                              </Button>
+                            )}
                           </div>
                         </FormControl>
                         <FormMessage />
@@ -261,30 +248,34 @@ function UserAccountForm({
                     {warning}
                   </div>
                 )}
-                <div className="flex flex-row items-center justify-between rounded-lg border p-3 shadow-sm">
-                  <div className="space-y-0.5">
-                    <Label htmlFor="update-all-servers">
-                      Sync Profile Updates
-                    </Label>
-                    <p className="text-muted-foreground text-sm">
-                      Update your profile on all active servers.
-                    </p>
-                  </div>
-                  <Switch
-                    checked={updateAllServers}
-                    id="update-all-servers"
-                    onCheckedChange={setUpdateAllServers}
-                  />
-                </div>
-                <div className="flex flex-col gap-3">
-                  <Button
-                    className="w-full"
-                    disabled={submitting}
-                    type="submit"
-                  >
-                    {submitting ? 'Updating Profile...' : 'Update Profile'}
-                  </Button>
-                </div>
+                {!disabled && (
+                  <>
+                    <div className="flex flex-row items-center justify-between rounded-lg border p-3 shadow-sm">
+                      <div className="space-y-0.5">
+                        <Label htmlFor="update-all-servers">
+                          Sync Profile Updates
+                        </Label>
+                        <p className="text-muted-foreground text-sm">
+                          Update your profile on all active servers.
+                        </p>
+                      </div>
+                      <Switch
+                        checked={updateAllServers}
+                        id="update-all-servers"
+                        onCheckedChange={setUpdateAllServers}
+                      />
+                    </div>
+                    <div className="flex flex-col gap-3">
+                      <Button
+                        className="w-full"
+                        disabled={submitting}
+                        type="submit"
+                      >
+                        {submitting ? 'Updating Profile...' : 'Update Profile'}
+                      </Button>
+                    </div>
+                  </>
+                )}
               </div>
             </form>
           </Form>

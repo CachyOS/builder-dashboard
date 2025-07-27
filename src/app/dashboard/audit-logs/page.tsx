@@ -141,6 +141,7 @@ export default function AuditLogsPage() {
             <UsernameHoverCard
               description={user?.display_desc}
               displayName={user?.display_name}
+              link
               profileImage={user?.profile_picture_url}
               username={row.original.username}
             />

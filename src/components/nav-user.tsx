@@ -90,10 +90,10 @@ export function NavUser({
               <DropdownMenuItem>
                 <Link
                   className="flex items-center gap-2 w-full"
-                  href="/dashboard/account"
+                  href="/dashboard/profile"
                 >
                   <BadgeCheck />
-                  Account
+                  Profile
                 </Link>
               </DropdownMenuItem>
             </DropdownMenuGroup>
