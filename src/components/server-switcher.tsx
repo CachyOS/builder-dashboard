@@ -20,6 +20,10 @@ import {
   SidebarMenuItem,
   useSidebar,
 } from '@/components/ui/sidebar';
+import {
+  useNumericKeyShortcutListener,
+  useNumericKeyVimShortcutListener,
+} from '@/hooks/use-keyboard-shortcut-listener';
 import {ServerData} from '@/lib/typings';
 
 export function ServerSwitcher({
@@ -31,6 +35,60 @@ export function ServerSwitcher({
   const [activeServer, setActiveServer] = React.useState<null | ServerData>(
     null
   );
+
+  const handleServerChange = React.useCallback(
+    (server: ServerData) => {
+      if (
+        server.accessible &&
+        activeServer &&
+        server.name !== activeServer.name
+      ) {
+        const toastId = toast.loading(
+          `Switching to server "${server.name}"...`
+        );
+        changeServer(server.name)
+          .then(res => {
+            if (res.error) {
+              toast.error(res.error, {
+                closeButton: true,
+                duration: Infinity,
+                id: toastId,
+              });
+            } else {
+              setActiveServer(server);
+              updateActiveServer(server.name);
+              toast.success(res.msg ?? 'Switched server successfully!', {
+                id: toastId,
+              });
+            }
+          })
+          .catch(() => {
+            toast.error('Failed to switch server, please try again later.', {
+              closeButton: true,
+              duration: Infinity,
+              id: toastId,
+            });
+          });
+      }
+    },
+    [activeServer, updateActiveServer]
+  );
+
+  const handleServerSwitchShortcut = React.useCallback(
+    (key: number) => {
+      if (key > servers.length || key < 1) {
+        return;
+      }
+      const server = servers[key - 1];
+      if (server && server.accessible) {
+        handleServerChange(server);
+      }
+    },
+    [handleServerChange, servers]
+  );
+
+  useNumericKeyShortcutListener(handleServerSwitchShortcut);
+  useNumericKeyVimShortcutListener(handleServerSwitchShortcut);
 
   React.useEffect(() => {
     if (servers.length > 0) {
@@ -92,42 +150,7 @@ export function ServerSwitcher({
                 className="gap-2 p-2"
                 disabled={!server.accessible}
                 key={server.name}
-                onClick={() => {
-                  if (server.accessible && server.name !== activeServer.name) {
-                    const toastId = toast.loading(
-                      `Switching to server "${server.name}"...`
-                    );
-                    changeServer(server.name)
-                      .then(res => {
-                        if (res.error) {
-                          toast.error(res.error, {
-                            closeButton: true,
-                            duration: Infinity,
-                            id: toastId,
-                          });
-                        } else {
-                          setActiveServer(server);
-                          updateActiveServer(server.name);
-                          toast.success(
-                            res.msg ?? 'Switched server successfully!',
-                            {
-                              id: toastId,
-                            }
-                          );
-                        }
-                      })
-                      .catch(() => {
-                        toast.error(
-                          'Failed to switch server, please try again later.',
-                          {
-                            closeButton: true,
-                            duration: Infinity,
-                            id: toastId,
-                          }
-                        );
-                      });
-                  }
-                }}
+                onClick={() => handleServerChange(server)}
               >
                 <div className="flex size-6 items-center justify-center rounded-md border">
                   <Image

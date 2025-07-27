@@ -361,6 +361,7 @@ export default function RebuildQueuePackageListPage() {
       {
         icon: Search,
         id: 'pkgbase',
+        isPrimary: true,
         placeholder: 'Search packages...',
       },
     ],

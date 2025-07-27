@@ -182,6 +182,7 @@ export default function AuditLogsPage() {
       {
         icon: Search,
         id: 'description',
+        isPrimary: true,
         placeholder: 'Search description...',
       },
     ],

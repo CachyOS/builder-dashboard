@@ -20,6 +20,7 @@ import {
   SidebarMenuItem,
   useSidebar,
 } from '@/components/ui/sidebar';
+import {useGenericVimShortcutListener} from '@/hooks/use-keyboard-shortcut-listener';
 import {UserData} from '@/lib/typings';
 
 export function NavUser({
@@ -34,6 +35,8 @@ export function NavUser({
     .map(n => n.charAt(0))
     .join('')
     .toUpperCase();
+
+  useGenericVimShortcutListener('q', () => logout());
 
   return (
     <SidebarMenu>

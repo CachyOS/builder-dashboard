@@ -1,4 +1,5 @@
 import {AppSidebar} from '@/components/app-sidebar';
+import {CommandMenu} from '@/components/command-menu';
 import {HeaderBreadcrumbs} from '@/components/header-breadcrumbs';
 import {Separator} from '@/components/ui/separator';
 import {
@@ -26,7 +27,10 @@ export default function RootLayout({
             <HeaderBreadcrumbs />
           </div>
         </header>
-        <div className="flex flex-1 flex-col gap-4 p-4 pt-0">{children}</div>
+        <div className="flex flex-1 flex-col gap-4 p-4 pt-0">
+          <CommandMenu />
+          {children}
+        </div>
       </SidebarInset>
     </SidebarProvider>
   );

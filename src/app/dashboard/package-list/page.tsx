@@ -3,7 +3,14 @@
 import {ColumnDef} from '@tanstack/react-table';
 import {Ellipsis, Logs, RotateCcw, Search, SquareTerminal} from 'lucide-react';
 import Link from 'next/link';
-import {Fragment, useCallback, useEffect, useMemo, useState} from 'react';
+import {
+  Fragment,
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from 'react';
 import {toast} from 'sonner';
 import {useDebounce} from 'use-debounce';
 
@@ -27,6 +34,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 import {Input} from '@/components/ui/input';
 import {useSidebar} from '@/components/ui/sidebar';
+import {useGenericShortcutListener} from '@/hooks/use-keyboard-shortcut-listener';
 import {
   BasePackageWithIDList,
   ListPackageResponse,
@@ -64,6 +72,14 @@ export default function PackageListPage() {
     }
     setShowRebuildModal(state);
   }, []);
+  const primarySearchFilterInputRef = useRef<HTMLInputElement>(null);
+  const primarySearchFilterShortcutCallback = useCallback(() => {
+    if (primarySearchFilterInputRef.current) {
+      primarySearchFilterInputRef.current.focus();
+    }
+  }, []);
+
+  useGenericShortcutListener('/', primarySearchFilterShortcutCallback, true);
 
   const columns: ColumnDef<Package>[] = useMemo(
     () => [
@@ -427,6 +443,7 @@ export default function PackageListPage() {
                   id="package-search"
                   onChange={e => setSearchQuery(e.target.value)}
                   placeholder="Search packages..."
+                  ref={primarySearchFilterInputRef}
                   type="text"
                   value={searchQuery}
                 />

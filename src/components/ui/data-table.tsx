@@ -29,13 +29,19 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
+import {useGenericShortcutListener} from '@/hooks/use-keyboard-shortcut-listener';
 
 interface DataTableProps<TData, TValue> {
   allowColumnToggle?: boolean;
   columns: ColumnDef<TData, TValue>[];
   customFilters?: ((table: TableType<TData>) => React.ReactNode)[];
   data: TData[];
-  filters?: {icon?: LucideIcon; id: string; placeholder?: string}[];
+  filters?: {
+    icon?: LucideIcon;
+    id: string;
+    isPrimary?: boolean;
+    placeholder?: string;
+  }[];
   fullWidth?: boolean;
   getRowId?: (row: TData) => string;
   getSubRows?: (row: TData) => TData[];
@@ -84,6 +90,7 @@ export function DataTable<TData, TValue>({
   React.useEffect(() => {
     setRowSelection({});
   }, [resetSelection]);
+  const primarySearchFilterInputRef = React.useRef<HTMLInputElement>(null);
   const table = useReactTable({
     columns,
     data,
@@ -117,6 +124,14 @@ export function DataTable<TData, TValue>({
     },
   });
 
+  const primarySearchFilterShortcutCallback = React.useCallback(() => {
+    if (primarySearchFilterInputRef.current) {
+      primarySearchFilterInputRef.current.focus();
+    }
+  }, []);
+
+  useGenericShortcutListener('/', primarySearchFilterShortcutCallback, true);
+
   return (
     <div
       className={
@@ -136,6 +151,11 @@ export function DataTable<TData, TValue>({
             }
             placeholder={x.placeholder}
             value={(table.getColumn(x.id)?.getFilterValue() as string) ?? ''}
+            {...(x.isPrimary
+              ? {
+                  ref: primarySearchFilterInputRef,
+                }
+              : {})}
           />
         ))}
         {customFilters && (

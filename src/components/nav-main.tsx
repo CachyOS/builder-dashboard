@@ -20,7 +20,7 @@ export function NavMain({
   }[];
 }>) {
   return (
-    <SidebarGroup className="group-data-[collapsible=icon]:hidden">
+    <SidebarGroup>
       <SidebarMenu>
         {items.map(item => (
           <SidebarMenuItem key={item.name}>

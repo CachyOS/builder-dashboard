@@ -6,13 +6,13 @@ import {WebLinksAddon} from '@xterm/addon-web-links';
 import {WebglAddon} from '@xterm/addon-webgl';
 import {Terminal} from '@xterm/xterm';
 import styles from 'ansi-styles';
-import {ArrowDownIcon, ArrowUpIcon, SearchIcon} from 'lucide-react';
+import {ArrowDownIcon, ArrowUpIcon} from 'lucide-react';
 import {useEffect, useRef, useState} from 'react';
 
 import {getPackageLog} from '@/app/actions';
 import Loader from '@/components/loader';
 import {Input} from '@/components/ui/input';
-import {useFindShortcutListener} from '@/hooks/use-find-shortcut-listener';
+import {useGenericShortcutListener} from '@/hooks/use-keyboard-shortcut-listener';
 import {PackageMArch} from '@/lib/typings';
 
 import '@xterm/xterm/css/xterm.css';
@@ -187,7 +187,7 @@ export default function TerminalComponent({
       }
     };
   }, [ref, loaded, inputRef, arrowUpRef, arrowDownRef]);
-  useFindShortcutListener(() => {
+  useGenericShortcutListener('f', () => {
     containerRef.current?.classList.remove('md:hidden');
     inputRef.current?.focus();
   });
@@ -199,7 +199,6 @@ export default function TerminalComponent({
       <div className="md:hidden" ref={containerRef}>
         <Input
           className="absolute z-10 max-w-xl right-0"
-          icon={SearchIcon}
           placeholder="Search logs"
           ref={inputRef}
         />

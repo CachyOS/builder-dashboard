@@ -1,6 +1,6 @@
 'use client';
 
-import {Activity, Package, PieChart, Repeat2} from 'lucide-react';
+import {Activity, Logs, Package, PieChart, Repeat2} from 'lucide-react';
 import * as React from 'react';
 import {toast} from 'sonner';
 
@@ -31,7 +31,7 @@ const items = [
     url: '/dashboard/rebuild-queue',
   },
   {
-    icon: Activity,
+    icon: Logs,
     name: 'Audit Logs',
     url: '/dashboard/audit-logs',
   },
