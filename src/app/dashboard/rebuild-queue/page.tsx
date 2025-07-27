@@ -244,6 +244,7 @@ export default function RebuildQueuePackageListPage() {
               </DropdownMenuItem>
               <DropdownMenuSeparator />
               <DropdownMenuItem
+                asChild
                 disabled={row.original.status !== PackageStatus.FAILED}
               >
                 <Link
@@ -255,6 +256,7 @@ export default function RebuildQueuePackageListPage() {
                 </Link>
               </DropdownMenuItem>
               <DropdownMenuItem
+                asChild
                 disabled={row.original.status !== PackageStatus.FAILED}
               >
                 <Link
@@ -375,7 +377,7 @@ export default function RebuildQueuePackageListPage() {
   );
 
   return (
-    <Card className="flex h-full w-full items-center justify-center p-2">
+    <Card className="flex h-full w-full items-center p-2">
       <RebuildPackagesDialog
         onOpenChange={onOpenChange}
         open={showRebuildModal}

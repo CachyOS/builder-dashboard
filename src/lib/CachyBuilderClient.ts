@@ -475,6 +475,13 @@ export default class CachyBuilderClient {
     clientHeaders = new Headers()
   ) {
     const request = UserProfileSchema.safeParse(profile);
+
+    if (!request.success) {
+      throw new Error(
+        `Invalid user profile request: ${request.error.issues.map(issue => issue.message).join(', ')}`
+      );
+    }
+
     const updateServers = CachyBuilderClient.servers.filter(
       (_, i) => updateAll || i === this.serverIndex
     );

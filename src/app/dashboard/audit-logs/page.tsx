@@ -214,7 +214,7 @@ export default function AuditLogsPage() {
   );
 
   return (
-    <Card className="flex h-full w-full items-center justify-center p-2">
+    <Card className="flex h-full w-full items-center p-2">
       {data ? (
         <DataTable
           columns={columns}

@@ -177,7 +177,7 @@ export default function RepoActionsPage() {
   }, [activeServer]);
 
   return (
-    <Card className="flex h-full w-full items-center justify-center p-2">
+    <Card className="flex h-full w-full items-center p-2">
       {data ? (
         <DataTable
           columns={columns}
@@ -187,7 +187,14 @@ export default function RepoActionsPage() {
           manualFiltering
           manualPagination
           onPageChange={pageIndex => setCurrentPage(pageIndex + 1)}
-          onPageSizeChange={pageSize => setPageSize(pageSize)}
+          onPageSizeChange={pageSize => {
+            const currentEntryCutoff = Math.min(
+              (currentPage - 1) * pageSize + 1,
+              data.total_actions
+            );
+            setCurrentPage(Math.floor(currentEntryCutoff / pageSize));
+            setPageSize(pageSize);
+          }}
           shrinkFirstColumn
           viewOptionsAdditionalItems={
             <div className="flex gap-2">

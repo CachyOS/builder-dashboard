@@ -10,6 +10,7 @@ import {useDebounce} from 'use-debounce';
 import {listPackages, rebuildPackage, searchPackages} from '@/app/actions';
 import Loader from '@/components/loader';
 import {RebuildPackagesDialog} from '@/components/rebuild-packages-dialog';
+import {StatsKPI} from '@/components/stats-kpi';
 import {Badge} from '@/components/ui/badge';
 import {Button} from '@/components/ui/button';
 import {Card} from '@/components/ui/card';
@@ -252,6 +253,7 @@ export default function PackageListPage() {
               </DropdownMenuItem>
               <DropdownMenuSeparator />
               <DropdownMenuItem
+                asChild
                 disabled={row.original.status !== PackageStatus.FAILED}
               >
                 <Link
@@ -263,6 +265,7 @@ export default function PackageListPage() {
                 </Link>
               </DropdownMenuItem>
               <DropdownMenuItem
+                asChild
                 disabled={row.original.status !== PackageStatus.FAILED}
               >
                 <Link
@@ -292,6 +295,16 @@ export default function PackageListPage() {
   );
   const onStatusFilterUpdate = useCallback(
     (statuses: PackageStatus[]) => setStatusFilter(statuses),
+    []
+  );
+  const statusFilterUpdate = useCallback(
+    (status: PackageStatus) =>
+      setStatusFilter(old => {
+        if (old.includes(status)) {
+          return old.filter(s => s !== status);
+        }
+        return [...old, status];
+      }),
     []
   );
 
@@ -376,7 +389,8 @@ export default function PackageListPage() {
   }, [debouncedSearchQuery, marchFilter, repoFilter, statusFilter]);
 
   return (
-    <Card className="flex h-full w-full items-center justify-center p-2">
+    <Card className="flex flex-col h-full w-full items-center p-2">
+      <StatsKPI statusFilterUpdate={statusFilterUpdate} />
       <RebuildPackagesDialog
         onOpenChange={onOpenChange}
         open={showRebuildModal}
@@ -393,7 +407,14 @@ export default function PackageListPage() {
           manualFiltering={manual}
           manualPagination={manual}
           onPageChange={pageIndex => setCurrentPage(pageIndex + 1)}
-          onPageSizeChange={pageSize => setPageSize(pageSize)}
+          onPageSizeChange={pageSize => {
+            const currentEntryCutoff = Math.min(
+              (currentPage - 1) * pageSize + 1,
+              data.total_packages
+            );
+            setCurrentPage(Math.floor(currentEntryCutoff / pageSize));
+            setPageSize(pageSize);
+          }}
           pageCount={manual ? data.total_pages : undefined}
           resetSelection={selectionReset}
           shrinkFirstColumn

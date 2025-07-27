@@ -183,7 +183,7 @@ function UserAccountForm({
                       <FormItem>
                         <FormLabel>Username</FormLabel>
                         <FormControl>
-                          <Input {...field} />
+                          <Input aria-readonly disabled {...field} />
                         </FormControl>
                         <FormMessage />
                       </FormItem>

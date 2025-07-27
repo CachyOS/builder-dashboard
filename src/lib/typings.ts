@@ -86,6 +86,10 @@ export const BasePackageSchema = z.object({
 
 export type BasePackage = z.infer<typeof BasePackageSchema>;
 
+export const BasePackageListSchema = z.array(BasePackageSchema);
+
+export type BasePackageList = z.infer<typeof BasePackageListSchema>;
+
 export const BasePackageWithIDSchema = BasePackageSchema.extend({
   id: z.string(),
 });
@@ -244,7 +248,9 @@ export const UserProfileSchema = z.strictObject({
 export type UserProfile = z.infer<typeof UserProfileSchema>;
 
 export const NonNullableUserProfileSchema = UserProfileSchema.extend({
-  display_desc: z.string(),
+  display_desc: z
+    .string()
+    .max(512, 'Description must be at most 512 characters long'),
   display_name: z.string(),
   profile_picture_url: z.union(
     [

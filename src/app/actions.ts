@@ -7,8 +7,8 @@ import {redirect} from 'next/navigation';
 import CachyBuilderClient from '@/lib/CachyBuilderClient';
 import {defaultSession, SessionData, sessionOptions} from '@/lib/session';
 import {
+  BasePackageListSchema,
   BasePackageWithIDList,
-  BasePackageWithNameListSchema,
   ListPackagesQuery,
   ListRepoActionsQuery,
   LoginRequest,
@@ -89,7 +89,7 @@ export async function getAuditLogs() {
           .split("'-'")
           .map(part => part.replace(/'/g, '').trim());
         packages.push({
-          description: `Package: ${pkgbase} (${pkgbase}), Repository: ${repository}, MArch: ${march}`,
+          description: `Package Base: ${pkgbase}, Repository: ${repository}, MArch: ${march}`,
           id: `${item.id}-1`,
           updated: item.updated,
           username: item.username,
@@ -99,13 +99,13 @@ export async function getAuditLogs() {
           .replace('bulk rebuild queued: ', '')
           .replace(/'/g, '')
           .trim();
-        const packagesArray = BasePackageWithNameListSchema.safeParse(
+        const packagesArray = BasePackageListSchema.safeParse(
           JSON.parse(packagesString)
         );
         if (packagesArray.success) {
           packagesArray.data.forEach((pkg, i) =>
             packages.push({
-              description: `Package: ${pkg.pkgname} (${pkg.pkgbase}), Repository: ${pkg.repository}, MArch: ${pkg.march}`,
+              description: `Package Base: ${pkg.pkgbase}, Repository: ${pkg.repository}, MArch: ${pkg.march}`,
               id: `${item.id}-${i + 1}`,
               updated: item.updated,
               username: item.username,
