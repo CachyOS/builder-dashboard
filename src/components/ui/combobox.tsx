@@ -1,5 +1,7 @@
-import {Check, ChevronsUpDown} from 'lucide-react';
+import {Check, PlusCircle} from 'lucide-react';
 
+import {Badge} from '@/components/ui//badge';
+import {Separator} from '@/components/ui//separator';
 import {Button} from '@/components/ui/button';
 import {
   Command,
@@ -8,45 +10,67 @@ import {
   CommandInput,
   CommandItem,
   CommandList,
+  CommandSeparator,
 } from '@/components/ui/command';
 import {Popover, PopoverContent, PopoverTrigger} from '@/components/ui/popover';
 import {cn} from '@/lib/utils';
 
 export interface ComboBoxProps<T> {
-  addItem: (item: T) => void;
   items: T[];
-  noSelectedItemsText: string;
-  removeItem: (item: T) => void;
+  onItemsUpdate: (items: T[]) => void;
   searchNoResultsText?: string;
   searchPlaceholder?: string;
   selectedItems: T[];
-  selectedItemsText: ((count: number) => string) | string;
+  title: string;
 }
 
 export function ComboBox<T extends string>({
-  addItem,
   items,
-  noSelectedItemsText,
-  removeItem,
+  onItemsUpdate,
   searchNoResultsText = 'No results found',
   searchPlaceholder = 'Search...',
   selectedItems,
-  selectedItemsText,
+  title,
 }: Readonly<ComboBoxProps<T>>) {
   return (
     <Popover>
       <PopoverTrigger asChild>
-        <Button
-          className={cn(
-            'max-w-sm w-full justify-between',
-            !selectedItems.length && 'text-muted-foreground'
+        <Button className="h-8 border-dashed" size="sm" variant="outline">
+          <PlusCircle />
+          {title}
+          {selectedItems.length > 0 && (
+            <>
+              <Separator className="mx-2 h-4" orientation="vertical" />
+              <Badge
+                className="rounded-sm px-1 font-normal lg:hidden"
+                variant="secondary"
+              >
+                {selectedItems.length}
+              </Badge>
+              <div className="hidden space-x-1 lg:flex">
+                {selectedItems.length > 2 ? (
+                  <Badge
+                    className="rounded-sm px-1 font-normal"
+                    variant="secondary"
+                  >
+                    {selectedItems.length} selected
+                  </Badge>
+                ) : (
+                  items
+                    .filter(option => selectedItems.includes(option))
+                    .map(option => (
+                      <Badge
+                        className="rounded-sm px-1 font-normal"
+                        key={option}
+                        variant="secondary"
+                      >
+                        {option}
+                      </Badge>
+                    ))
+                )}
+              </div>
+            </>
           )}
-          variant="outline"
-        >
-          {selectedItems.length
-            ? `${selectedItems.length} ${typeof selectedItemsText === 'function' ? selectedItemsText(selectedItems.length) : selectedItemsText}`
-            : noSelectedItemsText}
-          <ChevronsUpDown className="opacity-50" />
         </Button>
       </PopoverTrigger>
       <PopoverContent className="max-w-2xl w-full p-0">
@@ -59,11 +83,13 @@ export function ComboBox<T extends string>({
                 <CommandItem
                   key={item}
                   onSelect={() => {
-                    if (selectedItems.includes(item)) {
-                      removeItem(item);
+                    const items = new Set(selectedItems);
+                    if (items.has(item)) {
+                      items.delete(item);
                     } else {
-                      addItem(item);
+                      items.add(item);
                     }
+                    onItemsUpdate(Array.from(items));
                   }}
                   value={item}
                 >
@@ -77,6 +103,19 @@ export function ComboBox<T extends string>({
                 </CommandItem>
               ))}
             </CommandGroup>
+            {selectedItems.length > 0 && (
+              <>
+                <CommandSeparator />
+                <CommandGroup>
+                  <CommandItem
+                    className="justify-center text-center"
+                    onSelect={() => onItemsUpdate([])}
+                  >
+                    Clear filters
+                  </CommandItem>
+                </CommandGroup>
+              </>
+            )}
           </CommandList>
         </Command>
       </PopoverContent>

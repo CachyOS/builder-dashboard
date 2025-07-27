@@ -1,6 +1,7 @@
 'use client';
 
 import {BadgeCheck, ChevronsUpDown, LogOut} from 'lucide-react';
+import Link from 'next/link';
 
 import {logout} from '@/app/actions';
 import {Avatar, AvatarFallback, AvatarImage} from '@/components/ui/avatar';
@@ -27,6 +28,7 @@ export function NavUser({
   user: UserData;
 }>) {
   const {isMobile} = useSidebar();
+  const profileImage = user.profile_picture_url ?? '/cachyos-logo.svg';
   const fallbackName = user.displayName
     .split(' ')
     .map(n => n.charAt(0))
@@ -42,10 +44,10 @@ export function NavUser({
               className="data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground"
               size="lg"
             >
-              <Avatar className="h-8 w-8 rounded-lg">
+              <Avatar className="size-8 rounded-lg bg-muted p-1">
                 <AvatarImage
-                  alt={user.username}
-                  src={user.profile_picture_url}
+                  alt={user.displayName}
+                  {...(profileImage ? {src: profileImage} : {})}
                 />
                 <AvatarFallback className="rounded-lg">
                   {fallbackName}
@@ -66,10 +68,10 @@ export function NavUser({
           >
             <DropdownMenuLabel className="p-0 font-normal">
               <div className="flex items-center gap-2 px-1 py-1.5 text-left text-sm">
-                <Avatar className="h-8 w-8 rounded-lg">
+                <Avatar className="size-8 rounded-lg bg-muted p-1">
                   <AvatarImage
                     alt={user.displayName}
-                    src={user.profile_picture_url}
+                    {...(profileImage ? {src: profileImage} : {})}
                   />
                   <AvatarFallback className="rounded-lg">
                     {fallbackName}
@@ -86,8 +88,13 @@ export function NavUser({
             <DropdownMenuSeparator />
             <DropdownMenuGroup>
               <DropdownMenuItem>
-                <BadgeCheck />
-                Account
+                <Link
+                  className="flex items-center gap-2 w-full"
+                  href="/dashboard/account"
+                >
+                  <BadgeCheck />
+                  Account
+                </Link>
               </DropdownMenuItem>
             </DropdownMenuGroup>
             <DropdownMenuSeparator />

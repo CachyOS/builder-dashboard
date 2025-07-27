@@ -3,12 +3,13 @@
 import {ColumnDef} from '@tanstack/react-table';
 import {Ellipsis, Logs, RotateCcw, Search, SquareTerminal} from 'lucide-react';
 import Link from 'next/link';
-import {Fragment, useCallback, useEffect, useState} from 'react';
+import {Fragment, useCallback, useEffect, useMemo, useState} from 'react';
 import {toast} from 'sonner';
 import {useDebounce} from 'use-debounce';
 
-import {listPackages, searchPackages} from '@/app/actions';
+import {listPackages, rebuildPackage, searchPackages} from '@/app/actions';
 import Loader from '@/components/loader';
+import {RebuildPackagesDialog} from '@/components/rebuild-packages-dialog';
 import {Badge} from '@/components/ui/badge';
 import {Button} from '@/components/ui/button';
 import {Card} from '@/components/ui/card';
@@ -26,6 +27,7 @@ import {
 import {Input} from '@/components/ui/input';
 import {useSidebar} from '@/components/ui/sidebar';
 import {
+  BasePackageWithIDList,
   ListPackageResponse,
   Package,
   PackageMArch,
@@ -37,151 +39,6 @@ import {
 } from '@/lib/typings';
 import {packageStatusToIcon} from '@/lib/utils';
 
-const columns: ColumnDef<Package>[] = [
-  {
-    cell: ({row}) => (
-      <Checkbox
-        aria-label="Select row"
-        checked={row.getIsSelected()}
-        className="mb-2"
-        onCheckedChange={value => row.toggleSelected(!!value)}
-      />
-    ),
-    enableHiding: false,
-    enableSorting: false,
-    header: ({table}) => (
-      <Checkbox
-        aria-label="Select all"
-        checked={
-          table.getIsAllPageRowsSelected() ||
-          (table.getIsSomePageRowsSelected() && 'indeterminate')
-        }
-        className="mb-2"
-        onCheckedChange={value => table.toggleAllPageRowsSelected(!!value)}
-      />
-    ),
-    id: 'select',
-  },
-  {
-    cell: ({row}) => (
-      <span className="font-medium">
-        {row.original.pkgname} ({row.original.pkgbase})
-      </span>
-    ),
-    header: ({column}) => (
-      <DataTableColumnHeader column={column} title="Name" />
-    ),
-    id: 'name',
-  },
-  {
-    cell: ({row}) => (
-      <span className="font-medium">{row.original.repository}</span>
-    ),
-    header: ({column}) => (
-      <DataTableColumnHeader column={column} title="Repository" />
-    ),
-    id: 'repository',
-  },
-  {
-    cell: ({row}) => <span className="font-medium">{row.original.march}</span>,
-    header: ({column}) => (
-      <DataTableColumnHeader column={column} title="Arch" />
-    ),
-    id: 'arch',
-  },
-  {
-    cell: ({row}) => (
-      <span className="font-medium">{row.original.version}</span>
-    ),
-    header: ({column}) => (
-      <DataTableColumnHeader column={column} title="Version" />
-    ),
-    id: 'version',
-  },
-  {
-    cell: ({row}) => (
-      <span className="font-medium">{row.original.repo_version}</span>
-    ),
-    header: ({column}) => (
-      <DataTableColumnHeader column={column} title="Repo Version" />
-    ),
-    id: 'repo version',
-  },
-  {
-    cell: ({row}) => (
-      <div className="w-32">
-        <Badge className="text-muted-foreground px-1.5" variant="outline">
-          {packageStatusToIcon(row.original.status)}
-          {row.original.status}
-        </Badge>
-      </div>
-    ),
-    header: ({column}) => (
-      <DataTableColumnHeader column={column} title="Status" />
-    ),
-    id: 'status',
-  },
-  {
-    cell: ({row}) => {
-      const date = new Date(row.original.updated * 1000);
-      return (
-        <span className="font-medium">
-          {date.toLocaleDateString()}, {date.toLocaleTimeString()}
-        </span>
-      );
-    },
-    header: ({column}) => (
-      <DataTableColumnHeader column={column} title="Updated At" />
-    ),
-    id: 'updated at',
-  },
-  {
-    cell: ({row}) => (
-      <DropdownMenu>
-        <DropdownMenuTrigger asChild>
-          <Button
-            className="data-[state=open]:bg-muted text-muted-foreground flex size-8"
-            size="icon"
-            variant="ghost"
-          >
-            <Ellipsis className="size-5" />
-            <span className="sr-only">Open menu</span>
-          </Button>
-        </DropdownMenuTrigger>
-        <DropdownMenuContent align="end" className="max-w-48">
-          <DropdownMenuItem variant="destructive">
-            <RotateCcw /> Rebuild
-          </DropdownMenuItem>
-          <DropdownMenuSeparator />
-          <DropdownMenuItem
-            disabled={row.original.status !== PackageStatus.FAILED}
-          >
-            <Link
-              className="flex items-center gap-2 w-full"
-              href={`/dashboard/logs/${row.original.march}/${row.original.pkgbase}`}
-              prefetch={false}
-            >
-              <SquareTerminal /> Get Logs
-            </Link>
-          </DropdownMenuItem>
-          <DropdownMenuItem
-            disabled={row.original.status !== PackageStatus.FAILED}
-          >
-            <Link
-              className="flex items-center gap-2 w-full"
-              href={`/dashboard/logs/${row.original.march}/${row.original.pkgbase}?raw=true`}
-              prefetch={false}
-            >
-              <Logs /> Get Raw Logs
-            </Link>
-          </DropdownMenuItem>
-        </DropdownMenuContent>
-      </DropdownMenu>
-    ),
-    id: 'actions',
-  },
-];
-
 export default function PackageListPage() {
   const {activeServer} = useSidebar();
   const [data, setData] = useState<ListPackageResponse | null>(null);
@@ -191,49 +48,255 @@ export default function PackageListPage() {
   const [searchQuery, setSearchQuery] = useState('');
   const [debouncedSearchQuery] = useDebounce(searchQuery, 800);
   const [manual, setManual] = useState(true);
-  const [marchFilter, setMarchFilter] = useState(packageMArchValues);
-  const [repoFilter, setRepoFilter] = useState(packageRepoValues);
-  const [statusFilter, setStatusFilter] = useState(packageStatusValues);
-
-  const addMarchFilter = useCallback(
-    (march: PackageMArch) => {
-      if (!marchFilter.includes(march)) {
-        setMarchFilter(prev => [...prev, march]);
-      }
-    },
-    [marchFilter]
+  const [marchFilter, setMarchFilter] = useState<PackageMArch[]>([]);
+  const [repoFilter, setRepoFilter] = useState<PackageRepo[]>([]);
+  const [statusFilter, setStatusFilter] = useState<PackageStatus[]>([]);
+  const [rebuildPackages, setRebuildPackages] = useState<BasePackageWithIDList>(
+    []
   );
-  const removeMarchFilter = useCallback((march: PackageMArch) => {
-    setMarchFilter(prev => prev.filter(m => m !== march));
+  const [showRebuildModal, setShowRebuildModal] = useState(false);
+  const [selectionReset, setSelectionReset] = useState(false);
+  const onOpenChange = useCallback((state: boolean) => {
+    if (!state) {
+      setRebuildPackages([]);
+      setSelectionReset(old => !old);
+    }
+    setShowRebuildModal(state);
   }, []);
 
-  const addRepoFilter = useCallback(
-    (repo: PackageRepo) => {
-      if (!repoFilter.includes(repo)) {
-        setRepoFilter(prev => [...prev, repo]);
-      }
-    },
-    [repoFilter]
+  const columns: ColumnDef<Package>[] = useMemo(
+    () => [
+      {
+        cell: ({row}) => (
+          <Checkbox
+            aria-label="Select row"
+            checked={row.getIsSelected()}
+            className="mb-2"
+            onCheckedChange={value => {
+              row.toggleSelected(!!value);
+              if (value === true) {
+                setRebuildPackages(old => [
+                  ...old,
+                  {
+                    id: row.id,
+                    march: row.original.march,
+                    pkgbase: row.original.pkgbase,
+                    repository: row.original.repository,
+                  },
+                ]);
+              } else if (value === false) {
+                setRebuildPackages(old => old.filter(pkg => pkg.id !== row.id));
+              }
+            }}
+          />
+        ),
+        enableHiding: false,
+        enableSorting: false,
+        header: ({table}) => (
+          <Checkbox
+            aria-label="Select all"
+            checked={
+              table.getIsAllPageRowsSelected() ||
+              (table.getIsSomePageRowsSelected() && 'indeterminate')
+            }
+            className="mb-2"
+            onCheckedChange={value => {
+              table.toggleAllPageRowsSelected(!!value);
+              if (value === true) {
+                setRebuildPackages(old => {
+                  const newPkgs: BasePackageWithIDList = [];
+                  table.getCoreRowModel().rows.forEach(row => {
+                    if (old.findIndex(pkg => pkg.id === row.id) === -1) {
+                      newPkgs.push({
+                        id: row.id,
+                        march: row.original.march,
+                        pkgbase: row.original.pkgbase,
+                        repository: row.original.repository,
+                      });
+                    }
+                  });
+                  return [...old, ...newPkgs];
+                });
+              } else if (value === false) {
+                const removePkgs = table
+                  .getSelectedRowModel()
+                  .rows.map(row => row.id);
+                setRebuildPackages(old =>
+                  old.filter(pkg => !removePkgs.includes(pkg.id))
+                );
+              }
+            }}
+          />
+        ),
+        id: 'select',
+      },
+      {
+        cell: ({row}) => (
+          <span className="font-medium">
+            {row.original.pkgname} ({row.original.pkgbase})
+          </span>
+        ),
+        header: ({column}) => (
+          <DataTableColumnHeader column={column} title="Name" />
+        ),
+        id: 'name',
+      },
+      {
+        cell: ({row}) => (
+          <span className="font-medium">{row.original.repository}</span>
+        ),
+        header: ({column}) => (
+          <DataTableColumnHeader column={column} title="Repository" />
+        ),
+        id: 'repository',
+      },
+      {
+        cell: ({row}) => (
+          <span className="font-medium">{row.original.march}</span>
+        ),
+        header: ({column}) => (
+          <DataTableColumnHeader column={column} title="Arch" />
+        ),
+        id: 'arch',
+      },
+      {
+        cell: ({row}) => (
+          <span className="font-medium">{row.original.version}</span>
+        ),
+        header: ({column}) => (
+          <DataTableColumnHeader column={column} title="Version" />
+        ),
+        id: 'version',
+      },
+      {
+        cell: ({row}) => (
+          <span className="font-medium">{row.original.repo_version}</span>
+        ),
+        header: ({column}) => (
+          <DataTableColumnHeader column={column} title="Repo Version" />
+        ),
+        id: 'repo version',
+      },
+      {
+        cell: ({row}) => (
+          <div className="w-32">
+            <Badge className="text-muted-foreground px-1.5" variant="outline">
+              {packageStatusToIcon(row.original.status)}
+              {row.original.status}
+            </Badge>
+          </div>
+        ),
+        header: ({column}) => (
+          <DataTableColumnHeader column={column} title="Status" />
+        ),
+        id: 'status',
+      },
+      {
+        cell: ({row}) => {
+          const date = new Date(row.original.updated * 1000);
+          return (
+            <span className="font-medium">
+              {date.toLocaleDateString()}, {date.toLocaleTimeString()}
+            </span>
+          );
+        },
+        header: ({column}) => (
+          <DataTableColumnHeader column={column} title="Updated At" />
+        ),
+        id: 'updated at',
+      },
+      {
+        cell: ({row}) => (
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button
+                className="data-[state=open]:bg-muted text-muted-foreground flex size-8"
+                size="icon"
+                variant="ghost"
+              >
+                <Ellipsis className="size-5" />
+                <span className="sr-only">Open menu</span>
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="max-w-48">
+              <DropdownMenuItem
+                onSelect={() => {
+                  const toastId = toast.loading(
+                    `Requesting rebuild for PkgBase: ${row.original.pkgbase} MArch: ${row.original.march} Repo: ${row.original.repository}...`
+                  );
+                  rebuildPackage(
+                    row.original.pkgbase,
+                    row.original.march,
+                    row.original.repository
+                  ).then(response => {
+                    if ('error' in response && response.error) {
+                      toast.error(
+                        `Failed to rebuild package: ${response.error}`,
+                        {
+                          closeButton: true,
+                          duration: Infinity,
+                          id: toastId,
+                        }
+                      );
+                    } else if ('track_id' in response && response.track_id) {
+                      toast.success(
+                        `Rebuild request for PkgBase: ${row.original.pkgbase} MArch: ${row.original.march} Repo: ${row.original.repository} has been queued with Track ID: ${response.track_id}.`,
+                        {id: toastId}
+                      );
+                    }
+                  });
+                }}
+                variant="destructive"
+              >
+                <RotateCcw /> Rebuild
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem
+                disabled={row.original.status !== PackageStatus.FAILED}
+              >
+                <Link
+                  className="flex items-center gap-2 w-full"
+                  href={`/dashboard/logs/${row.original.march}/${row.original.pkgbase}`}
+                  prefetch={false}
+                >
+                  <SquareTerminal /> Get Logs
+                </Link>
+              </DropdownMenuItem>
+              <DropdownMenuItem
+                disabled={row.original.status !== PackageStatus.FAILED}
+              >
+                <Link
+                  className="flex items-center gap-2 w-full"
+                  href={`/dashboard/logs/${row.original.march}/${row.original.pkgbase}?raw=true`}
+                  prefetch={false}
+                >
+                  <Logs /> Get Raw Logs
+                </Link>
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        ),
+        id: 'actions',
+      },
+    ],
+    []
   );
-  const removeRepoFilter = useCallback((repo: PackageRepo) => {
-    setRepoFilter(prev => prev.filter(r => r !== repo));
-  }, []);
 
-  const addStatusFilter = useCallback(
-    (status: PackageStatus) => {
-      if (!statusFilter.includes(status)) {
-        setStatusFilter(prev => [...prev, status]);
-      }
-    },
-    [statusFilter]
+  const onMarchFilterUpdate = useCallback(
+    (marches: PackageMArch[]) => setMarchFilter(marches),
+    []
   );
-  const removeStatusFilter = useCallback((status: PackageStatus) => {
-    setStatusFilter(prev => prev.filter(s => s !== status));
-  }, []);
+  const onRepoFilterUpdate = useCallback(
+    (repos: PackageRepo[]) => setRepoFilter(repos),
+    []
+  );
+  const onStatusFilterUpdate = useCallback(
+    (statuses: PackageStatus[]) => setStatusFilter(statuses),
+    []
+  );
 
   useEffect(() => {
     setError(null);
-    setData(null);
     if (debouncedSearchQuery) {
       return;
     }
@@ -275,6 +338,17 @@ export default function PackageListPage() {
   ]);
 
   useEffect(() => {
+    setData(null);
+    setError(null);
+    setCurrentPage(1);
+    setSearchQuery('');
+    setMarchFilter([]);
+    setRepoFilter([]);
+    setStatusFilter([]);
+    setRebuildPackages([]);
+  }, [activeServer]);
+
+  useEffect(() => {
     setError(null);
     if (debouncedSearchQuery) {
       searchPackages({
@@ -303,73 +377,81 @@ export default function PackageListPage() {
 
   return (
     <Card className="flex h-full w-full items-center justify-center p-2">
+      <RebuildPackagesDialog
+        onOpenChange={onOpenChange}
+        open={showRebuildModal}
+        packages={rebuildPackages}
+      />
       {data ? (
         <DataTable
           columns={columns}
           data={data.packages}
+          getRowId={row =>
+            `${row.pkgbase}-${row.pkgname}-${row.repository}-${row.march}`
+          }
+          itemCount={manual ? data.total_packages : undefined}
           manualFiltering={manual}
           manualPagination={manual}
           onPageChange={pageIndex => setCurrentPage(pageIndex + 1)}
           onPageSizeChange={pageSize => setPageSize(pageSize)}
-          packageCount={manual ? data.total_packages : undefined}
           pageCount={manual ? data.total_pages : undefined}
+          resetSelection={selectionReset}
           shrinkFirstColumn
           viewOptionsAdditionalItems={
             <Fragment>
-              <Input
-                className="max-w-xs w-full"
-                icon={Search}
-                id="package-search"
-                onChange={e => setSearchQuery(e.target.value)}
-                placeholder="Search packages..."
-                type="text"
-                value={searchQuery}
-              />
-              <div className="flex gap-2">
+              <div className="flex shrink w-full">
+                <Input
+                  className="max-w-xs w-full"
+                  icon={Search}
+                  id="package-search"
+                  onChange={e => setSearchQuery(e.target.value)}
+                  placeholder="Search packages..."
+                  type="text"
+                  value={searchQuery}
+                />
+              </div>
+              <div className="flex flex-wrap lg:flex-nowrap gap-2">
+                {rebuildPackages.length ? (
+                  <div className="flex">
+                    <Button
+                      className="h-8"
+                      onClick={() => setShowRebuildModal(true)}
+                      size="sm"
+                      variant="outline"
+                    >
+                      <RotateCcw />
+                      Rebuild Selected Packages
+                    </Button>
+                  </div>
+                ) : null}
                 <div className="flex">
                   <ComboBox
-                    addItem={addMarchFilter}
                     items={packageMArchValues}
-                    noSelectedItemsText="No architecture selected"
-                    removeItem={removeMarchFilter}
+                    onItemsUpdate={onMarchFilterUpdate}
                     searchNoResultsText="No architectures found"
                     searchPlaceholder="Search architectures..."
                     selectedItems={marchFilter}
-                    selectedItemsText={count =>
-                      count > 1
-                        ? 'architectures selected'
-                        : 'architecture selected'
-                    }
+                    title="Architecture"
                   />
                 </div>
                 <div className="flex">
                   <ComboBox
-                    addItem={addRepoFilter}
                     items={packageRepoValues}
-                    noSelectedItemsText="No repository selected"
-                    removeItem={removeRepoFilter}
+                    onItemsUpdate={onRepoFilterUpdate}
                     searchNoResultsText="No repositories found"
                     searchPlaceholder="Search repositories..."
                     selectedItems={repoFilter}
-                    selectedItemsText={count =>
-                      count > 1
-                        ? 'repositories selected'
-                        : 'repository selected'
-                    }
+                    title="Repository"
                   />
                 </div>
                 <div className="flex">
                   <ComboBox
-                    addItem={addStatusFilter}
                     items={packageStatusValues}
-                    noSelectedItemsText="No status selected"
-                    removeItem={removeStatusFilter}
+                    onItemsUpdate={onStatusFilterUpdate}
                     searchNoResultsText="No statuses found"
                     searchPlaceholder="Search statuses..."
                     selectedItems={statusFilter}
-                    selectedItemsText={count =>
-                      count > 1 ? 'statuses selected' : 'status selected'
-                    }
+                    title="Status"
                   />
                 </div>
               </div>

@@ -86,6 +86,16 @@ export const BasePackageSchema = z.object({
 
 export type BasePackage = z.infer<typeof BasePackageSchema>;
 
+export const BasePackageWithIDSchema = BasePackageSchema.extend({
+  id: z.string(),
+});
+
+export type BasePackageWithID = z.infer<typeof BasePackageWithIDSchema>;
+
+export const BasePackageWithIDListSchema = z.array(BasePackageWithIDSchema);
+
+export type BasePackageWithIDList = z.infer<typeof BasePackageWithIDListSchema>;
+
 export const RebuildPackageSchema = BasePackageSchema.extend({
   status: z.enum(
     PackageStatus,
@@ -217,15 +227,42 @@ export const ListPackageResponseSchema = z.strictObject({
 export type ListPackageResponse = z.infer<typeof ListPackageResponseSchema>;
 
 export const UserProfileSchema = z.strictObject({
-  display_desc: z.string().nullable(),
+  display_desc: z
+    .string()
+    .max(512, 'Description must be at most 512 characters long')
+    .nullable(),
   display_name: z.string().nullable(),
   id: z.string().min(1, 'ID must be at least 1 character long'),
   profile_picture_url: z.string().nullable(),
   updated: z.number('Updated must be an positive integer').nonnegative(),
-  username: z.string().min(1, 'Username must be at least 1 character long'),
+  username: z
+    .string()
+    .lowercase('Username must be lowercase')
+    .min(1, 'Username must be at least 1 character long'),
 });
 
 export type UserProfile = z.infer<typeof UserProfileSchema>;
+
+export const NonNullableUserProfileSchema = UserProfileSchema.extend({
+  display_desc: z.string(),
+  display_name: z.string(),
+  profile_picture_url: z.union(
+    [
+      z.url({
+        hostname: z.regexes.domain,
+        normalize: true,
+        protocol: /^https?$/,
+      }),
+      z.literal('/cachyos-logo.svg'),
+      z.literal(''),
+    ],
+    'Profile picture URL must be a valid URL or an empty string'
+  ),
+});
+
+export type NonNullableUserProfile = z.infer<
+  typeof NonNullableUserProfileSchema
+>;
 
 export const PackageStatsListSchema = z.array(
   z.object({
@@ -310,9 +347,11 @@ export const ListRepoActionsQuerySchema = z.strictObject({
     .default(1)
     .optional(),
   march: z
-    .enum(
-      PackageMArch,
-      `Architecture must be one of: ${packageMArchValues.join(', ')}`
+    .array(
+      z.enum(
+        PackageMArch,
+        `Architecture must be one of: ${packageMArchValues.join(', ')}`
+      )
     )
     .optional(),
   page_size: z
@@ -321,9 +360,11 @@ export const ListRepoActionsQuerySchema = z.strictObject({
     .default(50)
     .optional(),
   repo: z
-    .enum(
-      PackageRepo,
-      `Repository must be one of: ${packageRepoValues.join(', ')}`
+    .array(
+      z.enum(
+        PackageRepo,
+        `Repository must be one of: ${packageRepoValues.join(', ')}`
+      )
     )
     .optional(),
 });
@@ -332,6 +373,9 @@ export type ListRepoActionsQuery = z.infer<typeof ListRepoActionsQuerySchema>;
 
 export const RepoActionsResponseSchema = z.strictObject({
   actions: RepoActionListSchema,
+  total_actions: z
+    .number('Total actions must be a positive integer')
+    .nonnegative(),
   total_pages: z.number('Total pages must be a positive integer').nonnegative(),
 });
 
@@ -380,4 +424,20 @@ export interface ParsedAuditLogEntryWithPackages extends ParsedAuditLogEntry {
 
 export type ParsedRepoActionsResponse = z.infer<
   typeof ParsedRepoActionsResponseSchema
+>;
+
+export const RebuildPackageResponseSchema = z.strictObject({
+  track_id: z.string().trim().nonempty('Track ID must not be empty'),
+});
+
+export type RebuildPackageResponse = z.infer<
+  typeof RebuildPackageResponseSchema
+>;
+
+export const BulkRebuildPackagesResponseSchema = z
+  .array(z.string())
+  .nonempty('Bulk Rebuild Track IDs array must not be empty');
+
+export type BulkRebuildPackagesResponse = z.infer<
+  typeof BulkRebuildPackagesResponseSchema
 >;

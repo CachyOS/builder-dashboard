@@ -34,9 +34,11 @@ const SIDEBAR_KEYBOARD_SHORTCUT = 'b';
 
 type SidebarContextProps = {
   activeServer: string;
+  doRefresh: () => void;
   isMobile: boolean;
   open: boolean;
   openMobile: boolean;
+  refresh: boolean;
   setActiveServer: (server: string) => void;
   setOpen: (open: boolean) => void;
   setOpenMobile: (open: boolean) => void;
@@ -318,7 +320,9 @@ function SidebarProvider({
 }) {
   const isMobile = useIsMobile();
   const [openMobile, setOpenMobile] = React.useState(false);
+  const [refresh, setRefresh] = React.useState(false);
   const [activeServer, setActiveServer] = React.useState<string>('');
+  const doRefresh = React.useCallback(() => setRefresh(curr => !curr), []);
 
   // This is the internal state of the sidebar.
   // We use openProp and setOpenProp for control from outside the component.
@@ -367,9 +371,11 @@ function SidebarProvider({
   const contextValue = React.useMemo<SidebarContextProps>(
     () => ({
       activeServer,
+      doRefresh,
       isMobile,
       open,
       openMobile,
+      refresh,
       setActiveServer,
       setOpen,
       setOpenMobile,
@@ -378,12 +384,13 @@ function SidebarProvider({
     }),
     [
       activeServer,
-      state,
-      open,
-      setOpen,
+      doRefresh,
       isMobile,
+      open,
       openMobile,
-      setOpenMobile,
+      refresh,
+      setOpen,
+      state,
       toggleSidebar,
     ]
   );

@@ -61,7 +61,7 @@ export function ServerSwitcher({
               <div className="bg-muted text-sidebar-primary-foreground flex aspect-square size-8 items-center justify-center rounded-lg">
                 <Image
                   alt="CachyOS Logo"
-                  className="size-4"
+                  className="size-7"
                   height={32}
                   src="/cachyos-logo.svg"
                   width={32}

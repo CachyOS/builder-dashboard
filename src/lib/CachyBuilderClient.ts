@@ -5,6 +5,12 @@ import {
   APIVersion,
   AuditLogList,
   AuditLogListSchema,
+  BasePackage,
+  BasePackageSchema,
+  BasePackageWithIDList,
+  BasePackageWithIDListSchema,
+  BulkRebuildPackagesResponse,
+  BulkRebuildPackagesResponseSchema,
   ListPackageResponse,
   ListPackageResponseSchema,
   ListPackagesQuery,
@@ -22,6 +28,8 @@ import {
   PackageStatsListSchema,
   RebuildPackageList,
   RebuildPackageListSchema,
+  RebuildPackageResponse,
+  RebuildPackageResponseSchema,
   RepoActionsResponse,
   RepoActionsResponseSchema,
   ResponseType,
@@ -82,6 +90,40 @@ export default class CachyBuilderClient {
     }));
   }
 
+  public async bulkRebuildPackages(
+    packages: BasePackageWithIDList,
+    clientHeaders = new Headers()
+  ) {
+    const request = BasePackageWithIDListSchema.safeParse(packages);
+
+    if (!request.success) {
+      throw new Error(
+        `Invalid package list request: ${request.error.issues.map(issue => issue.message).join(', ')}`
+      );
+    }
+
+    const response = await this._fetcher<BulkRebuildPackagesResponse>(
+      'bulk-rebuild',
+      clientHeaders,
+      APIVersion.V1,
+      {
+        body: JSON.stringify(request.data),
+        method: 'PUT',
+      },
+      ResponseType.JSON
+    ).catch(() => []);
+
+    const data = BulkRebuildPackagesResponseSchema.safeParse(response);
+
+    if (!data.success) {
+      throw new Error(
+        `Invalid bulk rebuild packages response: ${data.error.issues.map(issue => issue.message).join(', ')}`
+      );
+    }
+
+    return data.data;
+  }
+
   public async getAuditLogs(clientHeaders = new Headers()) {
     const response = await this._fetcher<AuditLogList>(
       'audit-logs',
@@ -96,6 +138,25 @@ export default class CachyBuilderClient {
         `Invalid audit log response: ${data.error.issues.map(issue => issue.message).join(', ')}`
       );
     }
+    return data.data;
+  }
+
+  public async getLoggedInUserProfile(clientHeaders = new Headers()) {
+    const response = await this._fetcher<UserProfile>(
+      'user-profile',
+      clientHeaders,
+      APIVersion.V1,
+      {},
+      ResponseType.JSON
+    ).catch(() => ({}));
+    const data = UserProfileSchema.safeParse(response);
+
+    if (!data.success) {
+      throw new Error(
+        `Invalid user profile response: ${data.error.issues.map(issue => issue.message).join(', ')}`
+      );
+    }
+
     return data.data;
   }
 
@@ -118,14 +179,15 @@ export default class CachyBuilderClient {
       .catch(() => '');
   }
 
-  public async getUserProfile(clientHeaders = new Headers()) {
+  public async getUserProfile(username: string, clientHeaders = new Headers()) {
     const response = await this._fetcher<UserProfile>(
-      'user-profile',
+      `profile/${username}`,
       clientHeaders,
       APIVersion.V1,
       {},
       ResponseType.JSON
-    );
+    ).catch(() => ({}));
+
     const data = UserProfileSchema.safeParse(response);
 
     if (!data.success) {
@@ -234,10 +296,10 @@ export default class CachyBuilderClient {
     const requestQuery = new URLSearchParams();
     if (query) {
       if (query.march) {
-        requestQuery.set('march', query.march);
+        requestQuery.set('march', query.march.join(','));
       }
       if (query.repo) {
-        requestQuery.set('repo', query.repo);
+        requestQuery.set('repo', query.repo.join(','));
       }
       if (query.current_page) {
         requestQuery.set('current_page', query.current_page.toString());
@@ -302,7 +364,7 @@ export default class CachyBuilderClient {
           : undefined
       )
       .filter(x => !!x)
-      .join('\n ');
+      .join('\n');
 
     if (failedServers.length > 0) {
       if (
@@ -310,7 +372,7 @@ export default class CachyBuilderClient {
         failedServers.length !== CachyBuilderClient.servers.length
       ) {
         console.warn(
-          `Some servers failed to respond correctly, but continuing due to allowInvalid flag.\n${errors}`
+          `[User Login] Some servers failed to respond correctly, but continuing due to allowInvalid flag.\n${errors}`
         );
       } else {
         throw new Error(`Invalid response from server(s):\n${errors}`);
@@ -341,6 +403,35 @@ export default class CachyBuilderClient {
         (_, i) => data[i].success
       ),
     };
+  }
+
+  public async rebuildPackage(pkg: BasePackage, clientHeaders = new Headers()) {
+    const request = BasePackageSchema.safeParse(pkg);
+    if (!request.success) {
+      throw new Error(
+        `Invalid package request: ${request.error.issues.map(issue => issue.message).join(', ')}`
+      );
+    }
+
+    const response = await this._fetcher<RebuildPackageResponse>(
+      `rebuild/${pkg.march}/${pkg.repository}/${pkg.pkgbase}`,
+      clientHeaders,
+      APIVersion.V1,
+      {
+        method: 'PUT',
+      },
+      ResponseType.JSON
+    ).catch(() => ({}));
+
+    const data = RebuildPackageResponseSchema.safeParse(response);
+
+    if (!data.success) {
+      throw new Error(
+        `Invalid rebuild package response: ${data.error.issues.map(issue => issue.message).join(', ')}`
+      );
+    }
+
+    return data.data;
   }
 
   public async searchPackages(
@@ -375,6 +466,66 @@ export default class CachyBuilderClient {
       );
     }
     return data.data;
+  }
+
+  public async updateProfile(
+    profile: UserProfile,
+    updateAll = false,
+    allowInvalid = false,
+    clientHeaders = new Headers()
+  ) {
+    const request = UserProfileSchema.safeParse(profile);
+    const updateServers = CachyBuilderClient.servers.filter(
+      (_, i) => updateAll || i === this.serverIndex
+    );
+
+    if (updateServers.length === 0) {
+      throw new Error('No servers to update profile on');
+    }
+
+    const responses = await Promise.all(
+      updateServers.map(async s =>
+        this._fetcher<UserProfile>(
+          'user-profile',
+          clientHeaders,
+          APIVersion.V1,
+          {
+            body: JSON.stringify(request.data),
+            method: 'PUT',
+          },
+          ResponseType.JSON,
+          s.url
+        ).catch(() => ({}))
+      )
+    );
+
+    const data = responses.map(r => UserProfileSchema.safeParse(r));
+
+    const failedServers = data.filter(d => !d.success);
+    const errors = data
+      .map((d, i) =>
+        !d.success
+          ? `Server: ${updateServers[i].name} ${d.error.issues.map(issue => issue.message).join(', ')}`
+          : undefined
+      )
+      .filter(x => !!x)
+      .join('\n');
+
+    if (failedServers.length > 0) {
+      if (allowInvalid && failedServers.length !== updateServers.length) {
+        console.warn(
+          `[Update User Profile] Some servers failed to respond correctly, but continuing due to allowInvalid flag.\n${errors}`
+        );
+      } else {
+        throw new Error(`Invalid response from server(s):\n${errors}`);
+      }
+    }
+
+    return {
+      errors,
+      profile: data.find(d => d.success)!.data,
+      validServers: updateServers.filter((_, i) => data[i].success),
+    };
   }
 
   public updateServer(server: string): void {

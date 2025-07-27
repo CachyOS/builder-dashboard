@@ -2,9 +2,9 @@ import {
   IconAlertCircleFilled,
   IconCircleCheckFilled,
   IconCircleChevronsRightFilled,
-  IconCircleDashedMinus,
-  IconCircleDashedPlus,
   IconLoader,
+  IconMinus,
+  IconPlus,
   IconProgressHelp,
 } from '@tabler/icons-react';
 import {type ClassValue, clsx} from 'clsx';
@@ -42,9 +42,9 @@ export function packageStatusToIcon(status: PackageStatus) {
 export function repoActionTypeToIcon(actionType: RepoActionType) {
   switch (actionType) {
     case RepoActionType.ADDITION:
-      return <IconCircleDashedPlus className="stroke-green-500 size-5" />;
+      return <IconPlus className="stroke-green-500 size-5" />;
     case RepoActionType.REMOVAL:
-      return <IconCircleDashedMinus className="stroke-red-500 size-5" />;
+      return <IconMinus className="stroke-red-500 size-5" />;
     default:
       return (
         <IconProgressHelp className="fill-gray-500 size-5 stroke-gray-50" />

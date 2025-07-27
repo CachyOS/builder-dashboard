@@ -9,6 +9,7 @@ import {
   getFilteredRowModel,
   getPaginationRowModel,
   getSortedRowModel,
+  RowSelectionState,
   SortingState,
   Table as TableType,
   useReactTable,
@@ -30,37 +31,43 @@ import {
 } from '@/components/ui/table';
 
 interface DataTableProps<TData, TValue> {
+  allowColumnToggle?: boolean;
   columns: ColumnDef<TData, TValue>[];
   customFilters?: ((table: TableType<TData>) => React.ReactNode)[];
   data: TData[];
   filters?: {icon?: LucideIcon; id: string; placeholder?: string}[];
   fullWidth?: boolean;
-  getSubRows?: (row: TData) => TData[] | undefined;
+  getRowId?: (row: TData) => string;
+  getSubRows?: (row: TData) => TData[];
   initialSortingState?: SortingState;
+  itemCount?: number;
   manualFiltering?: boolean;
   manualPagination?: boolean;
   onPageChange?: (pageIndex: number) => void;
   onPageSizeChange?: (pageSize: number) => void;
-  packageCount?: number;
   pageCount?: number;
+  resetSelection?: boolean;
   shrinkFirstColumn?: boolean;
   viewOptionsAdditionalItems?: React.ReactNode;
 }
 
 export function DataTable<TData, TValue>({
+  allowColumnToggle = true,
   columns,
   customFilters,
   data,
   filters,
   fullWidth = false,
-  getSubRows = () => [],
+  getRowId,
+  getSubRows,
   initialSortingState = [],
+  itemCount: packageCount,
   manualFiltering = false,
   manualPagination = false,
   onPageChange,
   onPageSizeChange,
-  packageCount,
   pageCount,
+  resetSelection = false,
   shrinkFirstColumn = false,
   viewOptionsAdditionalItems = null,
 }: Readonly<DataTableProps<TData, TValue>>) {
@@ -73,7 +80,10 @@ export function DataTable<TData, TValue>({
     React.useState<VisibilityState>({
       ID: false,
     });
-  const [rowSelection, setRowSelection] = React.useState({});
+  const [rowSelection, setRowSelection] = React.useState<RowSelectionState>({});
+  React.useEffect(() => {
+    setRowSelection({});
+  }, [resetSelection]);
   const table = useReactTable({
     columns,
     data,
@@ -83,6 +93,7 @@ export function DataTable<TData, TValue>({
     getPaginationRowModel: manualPagination
       ? undefined
       : getPaginationRowModel(),
+    getRowId,
     getSortedRowModel: getSortedRowModel(),
     getSubRows,
     initialState: {
@@ -111,10 +122,10 @@ export function DataTable<TData, TValue>({
       className={
         fullWidth
           ? 'flex flex-col gap-y-4 w-full'
-          : 'flex flex-col gap-y-4 max-w-7xl w-full'
+          : 'flex flex-col gap-y-4 max-w-7xl w-full mt-4'
       }
     >
-      <div className="flex items-center py-2 gap-x-2">
+      <div className="flex w-full flex-col lg:flex-row items-center gap-2">
         {filters?.map(x => (
           <Input
             className="max-w-xs"
@@ -127,13 +138,17 @@ export function DataTable<TData, TValue>({
             value={(table.getColumn(x.id)?.getFilterValue() as string) ?? ''}
           />
         ))}
-        <div className="flex gap-2">
-          {customFilters?.map(filter => filter(table))}
-        </div>
+        {customFilters && (
+          <div className="flex flex-wrap lg:flex-nowrap grow md:flex-row gap-2">
+            {customFilters?.map(filter => filter(table))}
+          </div>
+        )}
         {viewOptionsAdditionalItems}
-        <div className="flex ml-auto gap-x-2">
-          <DataTableViewOptions table={table} />
-        </div>
+        {allowColumnToggle && (
+          <div className="flex w-full lg:w-fit lg:ml-auto gap-2">
+            <DataTableViewOptions table={table} />
+          </div>
+        )}
       </div>
       <div className="rounded-md border">
         <Table className="**:data-[slot=table-head]:first:pl-4">

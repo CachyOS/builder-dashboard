@@ -2,8 +2,9 @@
 
 import {Activity, Package, PieChart, Repeat2} from 'lucide-react';
 import * as React from 'react';
+import {toast} from 'sonner';
 
-import {getAccessibleServers, getUser} from '@/app/actions';
+import {getAccessibleServers, getLoggedInUser} from '@/app/actions';
 import {NavMain} from '@/components/nav-main';
 import {NavUser} from '@/components/nav-user';
 import {ServerSwitcher} from '@/components/server-switcher';
@@ -13,6 +14,7 @@ import {
   SidebarFooter,
   SidebarHeader,
   SidebarRail,
+  useSidebar,
 } from '@/components/ui/sidebar';
 import CachyBuilderClient from '@/lib/CachyBuilderClient';
 import {UserData} from '@/lib/typings';
@@ -45,6 +47,7 @@ const items = [
   },
 ];
 export function AppSidebar({...props}: React.ComponentProps<typeof Sidebar>) {
+  const {activeServer, refresh} = useSidebar();
   const [servers, setServers] = React.useState(
     CachyBuilderClient.servers.map(server => ({
       accessible: true,
@@ -60,8 +63,17 @@ export function AppSidebar({...props}: React.ComponentProps<typeof Sidebar>) {
   });
   React.useEffect(() => {
     getAccessibleServers().then(data => setServers(data));
-    getUser().then(data => setUser(data));
-  }, []);
+    getLoggedInUser(false).then(data => {
+      if ('error' in data) {
+        toast.error(data.error, {
+          closeButton: true,
+          duration: Infinity,
+        });
+      } else {
+        setUser(data);
+      }
+    });
+  }, [activeServer, refresh]);
   return (
     <Sidebar collapsible="icon" {...props}>
       <SidebarHeader>

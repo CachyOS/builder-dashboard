@@ -129,20 +129,20 @@ export default function RepoActionsPage() {
   const [error, setError] = useState<null | string>(null);
   const [pageSize, setPageSize] = useState(20);
   const [currentPage, setCurrentPage] = useState(1);
-  const [marchFilter, setMarchFilter] = useState<PackageMArch | undefined>();
-  const [repoFilter, setRepoFilter] = useState<PackageRepo | undefined>();
+  const [marchFilter, setMarchFilter] = useState<PackageMArch[]>([]);
+  const [repoFilter, setRepoFilter] = useState<PackageRepo[]>([]);
 
-  const handleMarchFilterChange = useCallback((march?: PackageMArch) => {
-    setMarchFilter(march);
-  }, []);
-
-  const handleRepoFilterChange = useCallback((repo?: PackageRepo) => {
-    setRepoFilter(repo);
-  }, []);
+  const onMarchFilterUpdate = useCallback(
+    (marches: PackageMArch[]) => setMarchFilter(marches),
+    []
+  );
+  const onRepoFilterUpdate = useCallback(
+    (repos: PackageRepo[]) => setRepoFilter(repos),
+    []
+  );
 
   useEffect(() => {
     setError(null);
-    setData(null);
     listRepoActions({
       current_page: currentPage,
       march: marchFilter,
@@ -170,6 +170,12 @@ export default function RepoActionsPage() {
       });
   }, [activeServer, currentPage, pageSize, marchFilter, repoFilter]);
 
+  useEffect(() => {
+    setData(null);
+    setError(null);
+    setCurrentPage(1);
+  }, [activeServer]);
+
   return (
     <Card className="flex h-full w-full items-center justify-center p-2">
       {data ? (
@@ -177,36 +183,32 @@ export default function RepoActionsPage() {
           columns={columns}
           data={data.actions}
           getSubRows={row => row.parsedPackages as ParsedRepoAction[]}
+          itemCount={data.total_actions}
           manualFiltering
           manualPagination
           onPageChange={pageIndex => setCurrentPage(pageIndex + 1)}
           onPageSizeChange={pageSize => setPageSize(pageSize)}
-          pageCount={data.total_pages}
           shrinkFirstColumn
           viewOptionsAdditionalItems={
             <div className="flex gap-2">
               <div className="flex">
                 <ComboBox
-                  addItem={handleMarchFilterChange}
                   items={packageMArchValues}
-                  noSelectedItemsText="No architecture selected"
-                  removeItem={() => handleMarchFilterChange()}
+                  onItemsUpdate={onMarchFilterUpdate}
                   searchNoResultsText="No architectures found"
                   searchPlaceholder="Search architectures..."
-                  selectedItems={marchFilter ? [marchFilter] : []}
-                  selectedItemsText="architecture selected"
+                  selectedItems={marchFilter}
+                  title="Architecture"
                 />
               </div>
               <div className="flex">
                 <ComboBox
-                  addItem={handleRepoFilterChange}
                   items={packageRepoValues}
-                  noSelectedItemsText="No repository selected"
-                  removeItem={() => handleRepoFilterChange()}
+                  onItemsUpdate={onRepoFilterUpdate}
                   searchNoResultsText="No repositories found"
                   searchPlaceholder="Search repositories..."
-                  selectedItems={repoFilter ? [repoFilter] : []}
-                  selectedItemsText="repository selected"
+                  selectedItems={repoFilter}
+                  title="Repository"
                 />
               </div>
             </div>

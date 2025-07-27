@@ -27,7 +27,7 @@ export function DataTablePagination<TData>({
   table,
 }: Readonly<DataTablePaginationProps<TData>>) {
   return (
-    <div className="flex md:flex-row flex-col gap-y-2 items-center justify-between px-2">
+    <div className="flex flex-wrap gap-y-2 items-center justify-between px-2">
       <div className="flex-1 text-sm text-muted-foreground">
         Showing{' '}
         {table.getState().pagination.pageIndex + 1 === table.getPageCount()
@@ -35,7 +35,7 @@ export function DataTablePagination<TData>({
           : (table.getState().pagination.pageIndex + 1) *
             table.getState().pagination.pageSize}{' '}
         of {table.getRowCount()} row(s) (
-        {table.getSelectedRowModel().rows.length} Selected).
+        {Object.keys(table.getState().rowSelection).length} Selected).
       </div>
       <div className="flex md:flex-row flex-col items-center space-x-6 lg:space-x-8">
         <div className="flex items-center space-x-2">
