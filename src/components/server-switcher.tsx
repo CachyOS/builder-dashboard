@@ -14,6 +14,7 @@ import {
   DropdownMenuShortcut,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import {Kbd} from '@/components/ui/kbd';
 import {
   SidebarMenu,
   SidebarMenuButton,
@@ -80,7 +81,7 @@ export function ServerSwitcher({
         return;
       }
       const server = servers[key - 1];
-      if (server && server.accessible) {
+      if (server?.accessible) {
         handleServerChange(server);
       }
     },
@@ -162,7 +163,9 @@ export function ServerSwitcher({
                   />
                 </div>
                 {server.name}
-                <DropdownMenuShortcut>⌘{index + 1}</DropdownMenuShortcut>
+                <DropdownMenuShortcut>
+                  <Kbd>⌘ {index + 1}</Kbd>
+                </DropdownMenuShortcut>
               </DropdownMenuItem>
             ))}
           </DropdownMenuContent>

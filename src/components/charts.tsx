@@ -1,15 +1,21 @@
 'use client';
 
+import prettyBytes from 'pretty-bytes';
+import prettyMilliseconds from 'pretty-ms';
 import {useMemo} from 'react';
 import {
   Area,
   AreaChart,
+  Bar,
+  BarChart,
   CartesianGrid,
   Label,
   Pie,
   PieChart,
   XAxis,
+  YAxis,
 } from 'recharts';
+import {ValueType} from 'recharts/types/component/DefaultTooltipContent';
 
 import {
   ChartConfig,
@@ -21,6 +27,7 @@ import {
   ChartTooltipContent,
 } from '@/components/ui/chart';
 import {
+  BuildTimeStatsDataList,
   MonthlyChartData,
   PackageStatsList,
   PackageStatus,
@@ -58,6 +65,123 @@ const chartConfig: Record<PackageStatus, ChartConfigValue> = {
   },
 } satisfies ChartConfig;
 
+const buildTimeBarChartConfig = {
+  average_build_time: {
+    color: 'var(--chart-2)',
+    label: 'Avg. Build Time',
+  },
+  average_user_time: {
+    color: 'var(--chart-1)',
+    label: 'Avg. User Time',
+  },
+} satisfies ChartConfig;
+
+const buildMemoryBarChartConfig = {
+  average_max_rss: {
+    color: 'var(--chart-1)',
+    label: 'Avg. Max RSS',
+  },
+} satisfies ChartConfig;
+
+export function BuildStatsMemoryBarChart({
+  chartData,
+}: Readonly<{
+  chartData: BuildTimeStatsDataList;
+}>) {
+  const processedChartData = useMemo(
+    () =>
+      chartData
+        .map(item => ({
+          ...item,
+          key: `${item.march} - ${item.repository}`,
+        }))
+        .toSorted((a, b) => a.march.localeCompare(b.march))
+        .toSorted((a, b) => a.repository.localeCompare(b.repository)),
+    [chartData]
+  );
+  return (
+    <ChartContainer config={buildMemoryBarChartConfig}>
+      <BarChart accessibilityLayer data={processedChartData}>
+        <CartesianGrid vertical={false} />
+        <XAxis
+          axisLine={false}
+          dataKey="key"
+          tickLine={false}
+          tickMargin={10}
+        />
+        <ChartTooltip
+          content={
+            <ChartTooltipContent
+              contentFormatter={buildStatsMemoryContentFormatter}
+              hideLabel
+            />
+          }
+          cursor={false}
+        />
+        <ChartLegend content={<ChartLegendContent />} />
+        <Bar
+          dataKey="average_max_rss"
+          fill="var(--color-average_max_rss)"
+          radius={[0, 0, 4, 4]}
+        />
+      </BarChart>
+    </ChartContainer>
+  );
+}
+
+export function BuildStatsTimeBarChart({
+  chartData,
+}: Readonly<{
+  chartData: BuildTimeStatsDataList;
+}>) {
+  const processedChartData = useMemo(
+    () =>
+      chartData
+        .map(item => ({
+          ...item,
+          key: `${item.march} - ${item.repository}`,
+          total: item.average_build_time + item.average_user_time,
+        }))
+        .toSorted((a, b) => a.march.localeCompare(b.march))
+        .toSorted((a, b) => a.repository.localeCompare(b.repository)),
+    [chartData]
+  );
+  return (
+    <ChartContainer config={buildTimeBarChartConfig}>
+      <BarChart accessibilityLayer data={processedChartData}>
+        <CartesianGrid vertical={false} />
+        <XAxis
+          axisLine={false}
+          dataKey="key"
+          tickLine={false}
+          tickMargin={10}
+        />
+        <YAxis tickFormatter={buildStatsTimeTickFormatter} />
+        <ChartTooltip
+          content={
+            <ChartTooltipContent
+              contentFormatter={buildStatsTimeContentFormatter}
+              hideLabel
+            />
+          }
+          cursor={false}
+        />
+        <ChartLegend content={<ChartLegendContent />} />
+        <Bar
+          dataKey="average_user_time"
+          fill="var(--color-average_user_time)"
+          radius={[0, 0, 4, 4]}
+        />
+        <Bar
+          dataKey="average_build_time"
+          fill="var(--color-average_build_time)"
+          radius={[4, 4, 0, 0]}
+        />
+      </BarChart>
+    </ChartContainer>
+  );
+}
+
 export function CategoryStatsDonutChart({
   chartData,
 }: Readonly<{chartData: PackageStatsList}>) {
@@ -90,7 +214,7 @@ export function CategoryStatsDonutChart({
           nameKey="status_name"
           outerRadius={80}
         >
-          {totalPackages && (
+          {!!totalPackages && (
             <Label
               className="fill-foreground text-2xl font-bold"
               position="center"
@@ -167,4 +291,28 @@ export function MonthlyStatsAreaChart({
       </AreaChart>
     </ChartContainer>
   );
+}
+
+function buildStatsMemoryContentFormatter(value: ValueType, name: string) {
+  if (name === 'average_max_rss' && typeof value === 'number') {
+    return prettyBytes(value * 1024);
+  }
+  return value.toLocaleString();
+}
+
+function buildStatsTimeContentFormatter(value: ValueType, name?: string) {
+  if (
+    (!name || name === 'average_user_time' || name === 'average_build_time') &&
+    typeof value === 'number'
+  ) {
+    return prettyMilliseconds(value * 1000);
+  }
+  return value.toLocaleString();
+}
+
+function buildStatsTimeTickFormatter(value: ValueType) {
+  if (typeof value === 'number') {
+    return prettyMilliseconds(value * 1000);
+  }
+  return value.toLocaleString();
 }

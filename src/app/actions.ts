@@ -9,6 +9,7 @@ import {defaultSession, SessionData, sessionOptions} from '@/lib/session';
 import {
   BasePackageListSchema,
   BasePackageWithIDList,
+  BuildTimeStatsDataList,
   ListPackagesQuery,
   ListRepoActionsQuery,
   LoginRequest,
@@ -200,10 +201,18 @@ export async function getPackageStats(
 export async function getPackageStats(
   type: PackageStatsType.MONTH
 ): Promise<ProcessedPackageStatsByMonthList | {error: string}>;
+
+export async function getPackageStats(
+  type: PackageStatsType.BUILD_TIME
+): Promise<BuildTimeStatsDataList | {error: string}>;
+
 export async function getPackageStats(
   type: PackageStatsType = PackageStatsType.CATEGORY
 ): Promise<
-  PackageStatsList | ProcessedPackageStatsByMonthList | {error: string}
+  | BuildTimeStatsDataList
+  | PackageStatsList
+  | ProcessedPackageStatsByMonthList
+  | {error: string}
 > {
   const {cachyBuilderClient, session} = await getSession();
   if (!session.isLoggedIn) {
@@ -211,7 +220,7 @@ export async function getPackageStats(
   }
   try {
     if (type === PackageStatsType.MONTH) {
-      const stats = await cachyBuilderClient.listPackageStatsByMonth(
+      const stats = await cachyBuilderClient.getPackageStatsByMonth(
         await headers()
       );
       return stats.map(stat => ({
@@ -220,8 +229,10 @@ export async function getPackageStats(
           .toISOString()
           .slice(0, 7),
       }));
+    } else if (type === PackageStatsType.CATEGORY) {
+      return cachyBuilderClient.getPackageStatsByCategory(await headers());
     } else {
-      return cachyBuilderClient.listPackageStatsByCategory(await headers());
+      return cachyBuilderClient.getBuildTimePackageStats(await headers());
     }
   } catch (error) {
     return {
