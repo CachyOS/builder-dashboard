@@ -40,6 +40,13 @@ export type ChartLegendContentProps = {
 export type CustomTooltipProps = TooltipContentProps<ValueType, NameType> & {
   className?: string;
   color?: string;
+  contentFormatter?: (
+    value: number | string,
+    name: string,
+    item: Payload<number | string, string>,
+    index: number,
+    payload: ReadonlyArray<Payload<number | string, string>>
+  ) => number | string;
   formatter?: (
     value: number | string,
     name: string,
@@ -149,6 +156,7 @@ function ChartTooltipContent({
   active,
   className,
   color,
+  contentFormatter,
   formatter,
   hideIndicator = false,
   hideLabel = false,
@@ -159,7 +167,7 @@ function ChartTooltipContent({
   labelKey,
   nameKey,
   payload,
-}: Partial<CustomTooltipProps>) {
+}: Readonly<Partial<CustomTooltipProps>>) {
   const {config} = useChart();
 
   const tooltipLabel = React.useMemo(() => {
@@ -173,7 +181,7 @@ function ChartTooltipContent({
     const value = (() => {
       const v =
         !labelKey && typeof label === 'string'
-          ? (config[label as keyof typeof config]?.label ?? label)
+          ? (config[label]?.label ?? label)
           : itemConfig?.label;
 
       return typeof v === 'string' || typeof v === 'number' ? v : undefined;
@@ -271,8 +279,18 @@ function ChartTooltipContent({
                       </span>
                     </div>
                     {item.value && (
-                      <span className="text-foreground font-mono font-medium tabular-nums">
-                        {item.value.toLocaleString()}
+                      <span className="text-foreground font-mono font-medium tabular-nums pl-1">
+                        {contentFormatter &&
+                        item?.value !== undefined &&
+                        item.name
+                          ? contentFormatter(
+                              item.value,
+                              item.name,
+                              item,
+                              index,
+                              item.payload
+                            )
+                          : item.value.toLocaleString()}
                       </span>
                     )}
                   </div>
@@ -294,7 +312,7 @@ function ChartLegendContent({
   nameKey,
   payload,
   verticalAlign = 'bottom',
-}: ChartLegendContentProps) {
+}: Readonly<ChartLegendContentProps>) {
   const {config} = useChart();
 
   if (!payload?.length) {
@@ -372,9 +390,7 @@ function getPayloadConfigFromPayload(
     ] as string;
   }
 
-  return configLabelKey in config
-    ? config[configLabelKey]
-    : config[key as keyof typeof config];
+  return configLabelKey in config ? config[configLabelKey] : config[key];
 }
 
 export {

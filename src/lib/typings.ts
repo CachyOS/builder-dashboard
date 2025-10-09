@@ -14,12 +14,22 @@ export enum PackageMArch {
 
 export const packageMArchValues = Object.values(PackageMArch);
 
+export const packageMArch = z.enum(
+  PackageMArch,
+  `Architecture must be one of: ${packageMArchValues.join(', ')}`
+);
+
 export enum PackageRepo {
   CORE = 'core',
   EXTRA = 'extra',
 }
 
 export const packageRepoValues = Object.values(PackageRepo);
+
+export const packageRepo = z.enum(
+  PackageRepo,
+  `Repository must be one of: ${packageRepoValues.join(', ')}`
+);
 
 export enum AuditLogEventName {
   BULK_QPKG_REBUILD = 'BULK_QPKG_REBUILD',
@@ -28,7 +38,13 @@ export enum AuditLogEventName {
 
 export const auditLogEventNameValues = Object.values(AuditLogEventName);
 
+export const auditLogEventName = z.enum(
+  AuditLogEventName,
+  `Event name must be one of: ${auditLogEventNameValues.join(', ')}`
+);
+
 export enum PackageStatsType {
+  BUILD_TIME = 'build_time',
   CATEGORY = 'category',
   MONTH = 'month',
 }
@@ -45,6 +61,11 @@ export enum PackageStatus {
 
 export const packageStatusValues = Object.values(PackageStatus);
 
+export const packageStatus = z.enum(
+  PackageStatus,
+  `Status must be one of: ${packageStatusValues.join(', ')}`
+);
+
 export enum RepoActionType {
   ADDITION = 'ADDITION',
   REMOVAL = 'REMOVAL',
@@ -52,6 +73,11 @@ export enum RepoActionType {
 }
 
 export const repoActionTypeValues = Object.values(RepoActionType);
+
+export const repoActionType = z.enum(
+  RepoActionType,
+  `Action type must be one of: ${repoActionTypeValues.join(', ')}`
+);
 
 export enum ResponseType {
   JSON = 'json',
@@ -73,15 +99,9 @@ export interface UserData {
 }
 
 export const BasePackageSchema = z.object({
-  march: z.enum(
-    PackageMArch,
-    `Architecture must be one of: ${packageMArchValues.join(', ')}`
-  ),
+  march: packageMArch,
   pkgbase: z.string(),
-  repository: z.enum(
-    PackageRepo,
-    `Repository must be one of: ${packageRepoValues.join(', ')}`
-  ),
+  repository: packageRepo,
 });
 
 export type BasePackage = z.infer<typeof BasePackageSchema>;
@@ -101,10 +121,7 @@ export const BasePackageWithIDListSchema = z.array(BasePackageWithIDSchema);
 export type BasePackageWithIDList = z.infer<typeof BasePackageWithIDListSchema>;
 
 export const RebuildPackageSchema = BasePackageSchema.extend({
-  status: z.enum(
-    PackageStatus,
-    `Status must be one of: ${packageStatusValues.join(', ')}`
-  ),
+  status: packageStatus,
   updated: z.number('Updated must be a positive integer').nonnegative(),
 });
 
@@ -128,10 +145,7 @@ export type BasePackageWithNameList = z.infer<
 
 export const PackageSchema = BasePackageWithName.extend({
   repo_version: z.string(),
-  status: z.enum(
-    PackageStatus,
-    `Status must be one of: ${packageStatusValues.join(', ')}`
-  ),
+  status: packageStatus,
   updated: z.number('Updated must be a positive integer').nonnegative(),
   version: z.string(),
 });
@@ -170,30 +184,9 @@ export const LoginResponseSchema = z.strictObject({
 export type LoginResponse = z.infer<typeof LoginResponseSchema>;
 
 export const BasePackagesQuerySchema = z.strictObject({
-  march_filter: z
-    .array(
-      z.enum(
-        PackageMArch,
-        `Architecture filter must be one of: ${packageMArchValues.join(', ')}`
-      )
-    )
-    .optional(),
-  repo_filter: z
-    .array(
-      z.enum(
-        PackageRepo,
-        `Repository filter must be one of: ${Object.values(PackageRepo).join(', ')}`
-      )
-    )
-    .optional(),
-  status_filter: z
-    .array(
-      z.enum(
-        PackageStatus,
-        `Status filter must be one of: ${Object.values(PackageStatus).join(', ')}`
-      )
-    )
-    .optional(),
+  march_filter: z.array(packageMArch).optional(),
+  repo_filter: z.array(packageRepo).optional(),
+  status_filter: z.array(packageStatus).optional(),
 });
 
 export const SearchPackagesQuerySchema = BasePackagesQuerySchema.extend({
@@ -256,7 +249,6 @@ export const NonNullableUserProfileSchema = UserProfileSchema.extend({
     [
       z.url({
         hostname: z.regexes.domain,
-        normalize: true,
         protocol: /^https?$/,
       }),
       z.literal('/cachyos-logo.svg'),
@@ -273,10 +265,7 @@ export type NonNullableUserProfile = z.infer<
 export const PackageStatsListSchema = z.array(
   z.object({
     package_count: z.number(),
-    status_name: z.enum(
-      PackageStatus,
-      `Status must be one of: ${packageStatusValues.join(', ')}`
-    ),
+    status_name: packageStatus,
   })
 );
 
@@ -287,10 +276,7 @@ export const PackageStatsByMonth = z.object({
   reporting_month: z
     .number('Reporting month must be an positive integer')
     .nonnegative(),
-  status_name: z.enum(
-    PackageStatus,
-    `Status must be one of: ${packageStatusValues.join(', ')}`
-  ),
+  status_name: packageStatus,
 });
 
 export type PackageStatsByMonth = z.infer<typeof PackageStatsByMonth>;
@@ -320,14 +306,8 @@ export type ProcessedPackageStatsByMonthList = z.infer<
 >;
 
 export const RepoActionSchema = z.object({
-  action_type: z.enum(
-    RepoActionType,
-    `Action type must be one of: ${repoActionTypeValues.join(', ')}`
-  ),
-  march: z.enum(
-    PackageMArch,
-    `Architecture must be one of: ${packageMArchValues.join(', ')}`
-  ),
+  action_type: repoActionType,
+  march: packageMArch,
   packages: z.string(),
   repository: z.string(),
   status: z.boolean(),
@@ -352,27 +332,13 @@ export const ListRepoActionsQuerySchema = z.strictObject({
     .nonnegative()
     .default(1)
     .optional(),
-  march: z
-    .array(
-      z.enum(
-        PackageMArch,
-        `Architecture must be one of: ${packageMArchValues.join(', ')}`
-      )
-    )
-    .optional(),
+  march: z.array(packageMArch).optional(),
   page_size: z
     .number('Page size must be a positive integer')
     .nonnegative()
     .default(50)
     .optional(),
-  repo: z
-    .array(
-      z.enum(
-        PackageRepo,
-        `Repository must be one of: ${packageRepoValues.join(', ')}`
-      )
-    )
-    .optional(),
+  repo: z.array(packageRepo).optional(),
 });
 
 export type ListRepoActionsQuery = z.infer<typeof ListRepoActionsQuerySchema>;
@@ -397,14 +363,25 @@ export type MonthlyChartData = (Record<PackageStatus, number> & {
   reporting_month: string;
 })[];
 
+export const BuildTimeStatsData = z.strictObject({
+  average_build_time: z.number(),
+  average_max_rss: z.number(),
+  average_user_time: z.number(),
+  march: packageMArch,
+  repository: packageRepo,
+});
+
+export type BuildTimeStatsData = z.infer<typeof BuildTimeStatsData>;
+
+export const BuildTimeStatsDataList = z.array(BuildTimeStatsData);
+
+export type BuildTimeStatsDataList = z.infer<typeof BuildTimeStatsDataList>;
+
 export const AuditLogEvent = z.strictObject({
   event_desc: z
     .string()
     .min(1, 'Event description must be at least 1 character long'),
-  event_name: z.enum(
-    AuditLogEventName,
-    `Event name must be one of: ${auditLogEventNameValues.join(', ')}`
-  ),
+  event_name: auditLogEventName,
   id: z.string().min(1, 'ID must be at least 1 character long'),
   updated: z.number('Updated must be a positive integer').nonnegative(),
   username: z.string().min(1, 'Username must be at least 1 character long'),

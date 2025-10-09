@@ -4,6 +4,8 @@ import {useEffect, useMemo, useState} from 'react';
 
 import {getPackageStats} from '@/app/actions';
 import {
+  BuildStatsMemoryBarChart,
+  BuildStatsTimeBarChart,
   CategoryStatsDonutChart,
   MonthlyStatsAreaChart,
 } from '@/components/charts';
@@ -23,6 +25,7 @@ import {
 } from '@/components/ui/select';
 import {useSidebar} from '@/components/ui/sidebar';
 import {
+  BuildTimeStatsDataList,
   MonthlyChartData,
   PackageStatsList,
   PackageStatsType,
@@ -34,7 +37,71 @@ export default function StatisticsPage() {
     <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
       <CategoryChart />
       <MonthlyChart />
+      <BuildTimeBarChart />
+      <BuildMemoryBarChart />
     </div>
+  );
+}
+
+function BuildMemoryBarChart() {
+  const {activeServer} = useSidebar();
+  const [buildTimeChartData, setBuildTimeChartData] =
+    useState<BuildTimeStatsDataList>([]);
+
+  useEffect(() => {
+    setBuildTimeChartData([]);
+    getPackageStats(PackageStatsType.BUILD_TIME).then(response => {
+      if (Array.isArray(response)) {
+        setBuildTimeChartData(response);
+      }
+    });
+  }, [activeServer]);
+
+  return (
+    <Card className="pt-0">
+      <CardHeader className="flex items-center gap-2 space-y-0 border-b py-5 sm:flex-row">
+        <div className="grid flex-1 gap-1">
+          <CardTitle>Build Memory</CardTitle>
+          <CardDescription>
+            Showing build max rss statistics per repository and march
+          </CardDescription>
+        </div>
+      </CardHeader>
+      <CardContent>
+        <BuildStatsMemoryBarChart chartData={buildTimeChartData} />
+      </CardContent>
+    </Card>
+  );
+}
+
+function BuildTimeBarChart() {
+  const {activeServer} = useSidebar();
+  const [buildTimeChartData, setBuildTimeChartData] =
+    useState<BuildTimeStatsDataList>([]);
+
+  useEffect(() => {
+    setBuildTimeChartData([]);
+    getPackageStats(PackageStatsType.BUILD_TIME).then(response => {
+      if (Array.isArray(response)) {
+        setBuildTimeChartData(response);
+      }
+    });
+  }, [activeServer]);
+
+  return (
+    <Card className="pt-0">
+      <CardHeader className="flex items-center gap-2 space-y-0 border-b py-5 sm:flex-row">
+        <div className="grid flex-1 gap-1">
+          <CardTitle>Build Time</CardTitle>
+          <CardDescription>
+            Showing build time statistics per repository and march
+          </CardDescription>
+        </div>
+      </CardHeader>
+      <CardContent>
+        <BuildStatsTimeBarChart chartData={buildTimeChartData} />
+      </CardContent>
+    </Card>
   );
 }
 
