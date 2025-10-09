@@ -7,7 +7,7 @@ export async function GET(
   req: NextRequest,
   context: {
     params: Promise<{
-      march: PackageMArch;
+      march: string;
       pkgbase: string;
     }>;
   }
@@ -16,10 +16,10 @@ export async function GET(
   if (!march || !pkgbase) {
     return new NextResponse('Not found', {status: 404});
   }
-  if (!packageMArchValues.includes(march)) {
+  if (!packageMArchValues.includes(march as PackageMArch)) {
     return new NextResponse('Not found', {status: 404});
   }
-  const log = await getPackageLog(pkgbase, march, true);
+  const log = await getPackageLog(pkgbase, march as PackageMArch, true);
   if (typeof log !== 'string') {
     return new NextResponse('Not found', {status: 404});
   }
