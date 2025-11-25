@@ -6,7 +6,7 @@ import Link from 'next/link';
 import {useCallback, useEffect, useMemo, useState} from 'react';
 import {toast} from 'sonner';
 
-import {listRebuildPackages, rebuildPackage} from '@/app/actions';
+import {listRebuildPackages, rebuildPackage} from '@/app/actions/packages';
 import Loader from '@/components/loader';
 import {RebuildPackagesDialog} from '@/components/rebuild-packages-dialog';
 import {Badge} from '@/components/ui/badge';
@@ -95,8 +95,8 @@ export default function RebuildQueuePackageListPage() {
               if (value === true) {
                 setRebuildPackages(old => {
                   const newPkgs: BasePackageWithIDList = [];
-                  table.getRowModel().rows.forEach(row => {
-                    if (old.findIndex(pkg => pkg.id === row.id) === -1) {
+                  for (const row of table.getRowModel().rows) {
+                    if (!old.some(pkg => pkg.id === row.id)) {
                       newPkgs.push({
                         id: row.id,
                         march: row.original.march,
@@ -104,15 +104,15 @@ export default function RebuildQueuePackageListPage() {
                         repository: row.original.repository,
                       });
                     }
-                  });
+                  }
                   return [...old, ...newPkgs];
                 });
               } else if (value === false) {
-                const removePkgs = table
-                  .getSelectedRowModel()
-                  .rows.map(row => row.id);
+                const removePkgs = new Set(
+                  table.getSelectedRowModel().rows.map(row => row.id)
+                );
                 setRebuildPackages(old =>
-                  old.filter(pkg => !removePkgs.includes(pkg.id))
+                  old.filter(pkg => !removePkgs.has(pkg.id))
                 );
               }
             }}

@@ -14,7 +14,11 @@ import {
 import {toast} from 'sonner';
 import {useDebounce} from 'use-debounce';
 
-import {listPackages, rebuildPackage, searchPackages} from '@/app/actions';
+import {
+  listPackages,
+  rebuildPackage,
+  searchPackages,
+} from '@/app/actions/packages';
 import Loader from '@/components/loader';
 import {RebuildPackagesDialog} from '@/components/rebuild-packages-dialog';
 import {StatsKPI} from '@/components/stats-kpi';
@@ -122,8 +126,8 @@ export default function PackageListPage() {
               if (value === true) {
                 setRebuildPackages(old => {
                   const newPkgs: BasePackageWithIDList = [];
-                  table.getCoreRowModel().rows.forEach(row => {
-                    if (old.findIndex(pkg => pkg.id === row.id) === -1) {
+                  for (const row of table.getCoreRowModel().rows) {
+                    if (!old.some(pkg => pkg.id === row.id)) {
                       newPkgs.push({
                         id: row.id,
                         march: row.original.march,
@@ -131,15 +135,15 @@ export default function PackageListPage() {
                         repository: row.original.repository,
                       });
                     }
-                  });
+                  }
                   return [...old, ...newPkgs];
                 });
               } else if (value === false) {
-                const removePkgs = table
-                  .getSelectedRowModel()
-                  .rows.map(row => row.id);
+                const removePkgs = new Set(
+                  table.getSelectedRowModel().rows.map(row => row.id)
+                );
                 setRebuildPackages(old =>
-                  old.filter(pkg => !removePkgs.includes(pkg.id))
+                  old.filter(pkg => !removePkgs.has(pkg.id))
                 );
               }
             }}

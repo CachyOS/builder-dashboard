@@ -2,7 +2,7 @@
 
 import {useEffect, useMemo, useState} from 'react';
 
-import {getPackageStats} from '@/app/actions';
+import {getPackageStats} from '@/app/actions/stats';
 import {
   BuildStatsMemoryBarChart,
   BuildStatsTimeBarChart,
@@ -165,7 +165,7 @@ function MonthlyChart() {
         >();
         const years = new Set<string>();
 
-        response.forEach(item => {
+        for (const item of response) {
           const month = item.reporting_month;
           if (!chartDataMap.has(month)) {
             chartDataMap.set(month, {
@@ -182,7 +182,7 @@ function MonthlyChart() {
           const statusMap = chartDataMap.get(month)!;
           statusMap[item.status_name] = item.package_count;
           years.add(month.slice(0, 4));
-        });
+        }
 
         setMonthlyChartData(
           Array.from(chartDataMap.values()).sort((a, b) =>

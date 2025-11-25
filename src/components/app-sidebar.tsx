@@ -4,7 +4,7 @@ import {Activity, Logs, Package, PieChart, Repeat2} from 'lucide-react';
 import * as React from 'react';
 import {toast} from 'sonner';
 
-import {getAccessibleServers, getLoggedInUser} from '@/app/actions';
+import {getAccessibleServers, getLoggedInUser} from '@/app/actions/users';
 import {NavMain} from '@/components/nav-main';
 import {NavUser} from '@/components/nav-user';
 import {ServerSwitcher} from '@/components/server-switcher';

@@ -9,7 +9,7 @@ import {ChevronDown} from 'lucide-react';
 import {useCallback, useEffect, useState} from 'react';
 import {toast} from 'sonner';
 
-import {listRepoActions} from '@/app/actions';
+import {listRepoActions} from '@/app/actions/repo-actions';
 import Loader from '@/components/loader';
 import {Badge} from '@/components/ui/badge';
 import {Card} from '@/components/ui/card';

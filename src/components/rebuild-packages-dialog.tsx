@@ -3,7 +3,7 @@
 import {ColumnDef} from '@tanstack/react-table';
 import {toast} from 'sonner';
 
-import {bulkRebuildPackages} from '@/app/actions';
+import {bulkRebuildPackages} from '@/app/actions/packages';
 import {Button} from '@/components/ui/button';
 import {DataTable} from '@/components/ui/data-table';
 import {DataTableColumnHeader} from '@/components/ui/data-table-column-header';

@@ -2,7 +2,7 @@
 
 import {useEffect, useMemo, useState} from 'react';
 
-import {getPackageStats} from '@/app/actions';
+import {getPackageStats} from '@/app/actions/stats';
 import {KPICard} from '@/components/kpi-card';
 import {useSidebar} from '@/components/ui/sidebar';
 import {PackageStatsList, PackageStatsType, PackageStatus} from '@/lib/typings';

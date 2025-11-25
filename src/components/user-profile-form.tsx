@@ -5,7 +5,7 @@ import {useCallback, useMemo, useState} from 'react';
 import {useForm} from 'react-hook-form';
 import {toast} from 'sonner';
 
-import {updateProfile} from '@/app/actions';
+import {updateProfile} from '@/app/actions/users';
 import {Avatar, AvatarFallback, AvatarImage} from '@/components/ui/avatar';
 import {Button} from '@/components/ui/button';
 import {Card, CardContent, CardHeader, CardTitle} from '@/components/ui/card';
@@ -55,14 +55,14 @@ export function UserProfileForm({
     [user]
   );
   const form = useForm<NonNullableUserProfile>({
-    defaultValues: {
+    defaultValues: async () => ({
       display_desc: user.display_desc ?? '',
       display_name: user.display_name ?? user.username,
       id: user.id,
       profile_picture_url: user.profile_picture_url ?? '/cachyos-logo.svg',
       updated: user.updated ?? Date.now(),
       username: user.username,
-    },
+    }),
     resolver: zodResolver(NonNullableUserProfileSchema),
   });
 

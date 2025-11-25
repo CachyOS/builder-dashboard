@@ -27,12 +27,12 @@ export function KPICard<T extends string>({
   progressCircleVariant,
 }: Readonly<KPICardProps<T>>) {
   const progress = useMemo(
-    () => parseFloat(((count / maxCount) * 100).toFixed(2)),
+    () => Number.parseFloat(((count / maxCount) * 100).toFixed(2)),
     [count, maxCount]
   );
   return (
     <Card
-      className="p-4 w-72 flex-grow hover:cursor-pointer hover:bg-accent"
+      className="p-4 w-72 grow hover:cursor-pointer hover:bg-accent"
       onClick={() => onClick?.(item)}
     >
       <div className="flex items-center justify-between">

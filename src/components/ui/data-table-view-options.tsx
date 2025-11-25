@@ -43,7 +43,9 @@ export function DataTableViewOptions<TData>({
                 onCheckedChange={value => {
                   const val = !!value;
                   column.toggleVisibility(val);
-                  column.columns.forEach(x => x.toggleVisibility(val));
+                  for (const col of column.columns) {
+                    col.toggleVisibility(val);
+                  }
                 }}
               >
                 {column.id}

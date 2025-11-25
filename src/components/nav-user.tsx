@@ -3,7 +3,7 @@
 import {BadgeCheck, ChevronsUpDown, LogOut} from 'lucide-react';
 import Link from 'next/link';
 
-import {logout} from '@/app/actions';
+import {logout} from '@/app/actions/session';
 import {Avatar, AvatarFallback, AvatarImage} from '@/components/ui/avatar';
 import {
   DropdownMenu,

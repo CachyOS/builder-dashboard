@@ -2,7 +2,7 @@
 import {useCallback, useEffect, useState} from 'react';
 import {toast} from 'sonner';
 
-import {getLoggedInUser} from '@/app/actions';
+import {getLoggedInUser} from '@/app/actions/users';
 import Loader from '@/components/loader';
 import {Card} from '@/components/ui/card';
 import {useSidebar} from '@/components/ui/sidebar';

@@ -7,9 +7,9 @@ import {WebglAddon} from '@xterm/addon-webgl';
 import {Terminal} from '@xterm/xterm';
 import styles from 'ansi-styles';
 import {ArrowDownIcon, ArrowUpIcon} from 'lucide-react';
-import {useEffect, useRef, useState} from 'react';
+import {useCallback, useEffect, useMemo, useRef, useState} from 'react';
 
-import {getPackageLog} from '@/app/actions';
+import {getPackageLog} from '@/app/actions/packages';
 import Loader from '@/components/loader';
 import {Input} from '@/components/ui/input';
 import {useGenericShortcutListener} from '@/hooks/use-keyboard-shortcut-listener';
@@ -35,48 +35,51 @@ export default function TerminalComponent({
   const arrowUpRef = useRef<HTMLDivElement>(null);
   const arrowDownRef = useRef<HTMLDivElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
-  const terminal = new Terminal({
-    allowProposedApi: true,
-    convertEol: true,
-    cursorBlink: true,
-    cursorInactiveStyle: 'underline',
-    cursorStyle: 'underline',
-    disableStdin: true,
-    fontFamily: 'JetBrains Mono, monospace',
-    scrollback: Number.MAX_SAFE_INTEGER,
-    theme: {
-      background: '#000000',
-      black: '#1f1f1f',
-      blue: '#2a84d2',
-      brightBlack: '#d6dae4',
-      brightBlue: '#0f80d5',
-      brightCyan: '#0f7cda',
-      brightGreen: '#1dd260',
-      brightMagenta: '#524fb9',
-      brightRed: '#de342e',
-      brightWhite: '#ffffff',
-      brightYellow: '#f2bd09',
-      cursor: '#b9b9b9',
-      cyan: '#0f80d5',
-      foreground: '#d6dae4',
-      green: '#2cc55d',
-      magenta: '#4e59b7',
-      red: '#f71118',
-      selectionBackground: '#b9b9b9',
-      selectionForeground: '#131313',
-      white: '#d6dae4',
-      yellow: '#ecb90f',
-    },
-  });
-  const webLinksAddon = new WebLinksAddon();
-  const searchAddon = new SearchAddon();
-  const fitAddon = new FitAddon();
-  const webglAddon = new WebglAddon();
-  terminal.loadAddon(webLinksAddon);
-  terminal.loadAddon(searchAddon);
-  terminal.loadAddon(fitAddon);
-  terminal.loadAddon(webglAddon);
-  const searchEvent = () => {
+  const webLinksAddon = useMemo(() => new WebLinksAddon(), []);
+  const searchAddon = useMemo(() => new SearchAddon(), []);
+  const fitAddon = useMemo(() => new FitAddon(), []);
+  const webglAddon = useMemo(() => new WebglAddon(), []);
+  const terminal = useMemo(() => {
+    const term = new Terminal({
+      allowProposedApi: true,
+      convertEol: true,
+      cursorBlink: true,
+      cursorInactiveStyle: 'underline',
+      cursorStyle: 'underline',
+      disableStdin: true,
+      fontFamily: 'JetBrains Mono, monospace',
+      scrollback: Number.MAX_SAFE_INTEGER,
+      theme: {
+        background: '#000000',
+        black: '#1f1f1f',
+        blue: '#2a84d2',
+        brightBlack: '#d6dae4',
+        brightBlue: '#0f80d5',
+        brightCyan: '#0f7cda',
+        brightGreen: '#1dd260',
+        brightMagenta: '#524fb9',
+        brightRed: '#de342e',
+        brightWhite: '#ffffff',
+        brightYellow: '#f2bd09',
+        cursor: '#b9b9b9',
+        cyan: '#0f80d5',
+        foreground: '#d6dae4',
+        green: '#2cc55d',
+        magenta: '#4e59b7',
+        red: '#f71118',
+        selectionBackground: '#b9b9b9',
+        selectionForeground: '#131313',
+        white: '#d6dae4',
+        yellow: '#ecb90f',
+      },
+    });
+    term.loadAddon(webLinksAddon);
+    term.loadAddon(searchAddon);
+    term.loadAddon(fitAddon);
+    term.loadAddon(webglAddon);
+    return term;
+  }, [fitAddon, searchAddon, webLinksAddon, webglAddon]);
+  const searchEvent = useCallback(() => {
     searchAddon.findNext(inputRef.current?.value ?? '', {
       caseSensitive: false,
       decorations: {
@@ -87,14 +90,14 @@ export default function TerminalComponent({
       incremental: false,
       wholeWord: false,
     });
-  };
-  const arrowUpEvent = () => {
+  }, [searchAddon]);
+  const arrowUpEvent = useCallback(() => {
     searchAddon.findPrevious(inputRef.current?.value ?? '', {
       caseSensitive: false,
       incremental: false,
       wholeWord: false,
     });
-  };
+  }, [searchAddon]);
   useEffect(() => {
     const input = inputRef.current;
     const arrowUp = arrowUpRef.current;
@@ -134,19 +137,19 @@ export default function TerminalComponent({
         }
         terminal.write(
           log
-            .replace(
+            .replaceAll(
               /\bERROR\b/gi,
               `${styles.redBright.open}$&${styles.redBright.close}`
             )
-            .replace(
+            .replaceAll(
               /\bWARN(ING)?\b/gi,
               `${styles.yellowBright.open}$&${styles.yellowBright.close}`
             )
-            .replace(
+            .replaceAll(
               /\bcommand not found.*/gi,
               `${styles.redBright.open}$&${styles.redBright.close}`
             )
-            .replace(
+            .replaceAll(
               /\b[A-Fa-f0-9]{16}\b|\b[A-Fa-f0-9]{40}\b/g,
               [
                 OSC,
@@ -186,7 +189,22 @@ export default function TerminalComponent({
         arrowDown?.removeEventListener('click', searchEvent);
       }
     };
-  }, [ref, loaded, inputRef, arrowUpRef, arrowDownRef]);
+  }, [
+    ref,
+    loaded,
+    inputRef,
+    arrowUpRef,
+    arrowDownRef,
+    terminal,
+    pkgbase,
+    march,
+    fitAddon,
+    searchEvent,
+    arrowUpEvent,
+    searchAddon,
+    webLinksAddon,
+    webglAddon,
+  ]);
   useGenericShortcutListener('f', () => {
     containerRef.current?.classList.remove('md:hidden');
     inputRef.current?.focus();
@@ -210,7 +228,7 @@ export default function TerminalComponent({
         </div>
       </div>
       <div
-        className="h-full flex flex-col flex-grow min-h-screen w-full"
+        className="h-full flex flex-col grow min-h-screen w-full"
         ref={ref}
       />
     </div>

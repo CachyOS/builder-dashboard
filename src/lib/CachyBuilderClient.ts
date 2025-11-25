@@ -377,9 +377,9 @@ export default class CachyBuilderClient {
     const failedServers = data.filter(d => !d.success);
     const errors = data
       .map((d, i) =>
-        !d.success
-          ? `Server: ${CachyBuilderClient.servers[i].name} ${d.error.issues.map(issue => issue.message).join(', ')}`
-          : undefined
+        d.success
+          ? undefined
+          : `Server: ${CachyBuilderClient.servers[i].name} ${d.error.issues.map(issue => issue.message).join(', ')}`
       )
       .filter(x => !!x)
       .join('\n');
@@ -529,9 +529,9 @@ export default class CachyBuilderClient {
     const failedServers = data.filter(d => !d.success);
     const errors = data
       .map((d, i) =>
-        !d.success
-          ? `Server: ${updateServers[i].name} ${d.error.issues.map(issue => issue.message).join(', ')}`
-          : undefined
+        d.success
+          ? undefined
+          : `Server: ${updateServers[i].name} ${d.error.issues.map(issue => issue.message).join(', ')}`
       )
       .filter(x => !!x)
       .join('\n');

@@ -26,10 +26,10 @@ export function useGenericShortcutListener(
       }
     };
 
-    window.addEventListener('keydown', handleKeyDown);
+    globalThis.addEventListener('keydown', handleKeyDown);
 
     return () => {
-      window.removeEventListener('keydown', handleKeyDown);
+      globalThis.removeEventListener('keydown', handleKeyDown);
     };
   });
 }
@@ -62,10 +62,10 @@ export function useGenericVimShortcutListener(
       }
     };
 
-    window.addEventListener('keydown', handleKeyDown);
+    globalThis.addEventListener('keydown', handleKeyDown);
 
     return () => {
-      window.removeEventListener('keydown', handleKeyDown);
+      globalThis.removeEventListener('keydown', handleKeyDown);
       clearTimer(timer);
     };
   }, []);
@@ -84,14 +84,14 @@ export function useNumericKeyShortcutListener(callback: (key: number) => void) {
       const key = event.key.toLowerCase();
       if ((event.ctrlKey || event.metaKey) && numericKeyRegex.test(key)) {
         event.preventDefault();
-        callback(parseInt(key, 10));
+        callback(Number.parseInt(key, 10));
       }
     };
 
-    window.addEventListener('keydown', handleKeyDown);
+    globalThis.addEventListener('keydown', handleKeyDown);
 
     return () => {
-      window.removeEventListener('keydown', handleKeyDown);
+      globalThis.removeEventListener('keydown', handleKeyDown);
     };
   });
 }
@@ -114,7 +114,7 @@ export function useNumericKeyVimShortcutListener(
           colonPressed = false;
         }, 800);
       } else if (colonPressed && numericKeyRegex.test(key)) {
-        setColonAndKeyPressed(parseInt(key, 10));
+        setColonAndKeyPressed(Number.parseInt(key, 10));
         colonPressed = false;
         clearTimer(timer);
       } else {
@@ -123,10 +123,10 @@ export function useNumericKeyVimShortcutListener(
       }
     };
 
-    window.addEventListener('keydown', handleKeyDown);
+    globalThis.addEventListener('keydown', handleKeyDown);
 
     return () => {
-      window.removeEventListener('keydown', handleKeyDown);
+      globalThis.removeEventListener('keydown', handleKeyDown);
       clearTimer(timer);
     };
   }, []);

@@ -3,7 +3,7 @@ import {useParams} from 'next/navigation';
 import {useEffect, useState} from 'react';
 import {toast} from 'sonner';
 
-import {getUser} from '@/app/actions';
+import {getUser} from '@/app/actions/users';
 import Loader from '@/components/loader';
 import {Card} from '@/components/ui/card';
 import {useSidebar} from '@/components/ui/sidebar';

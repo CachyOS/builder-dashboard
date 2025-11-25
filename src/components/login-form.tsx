@@ -8,7 +8,7 @@ import {useCallback, useEffect, useState} from 'react';
 import {useForm} from 'react-hook-form';
 import {toast} from 'sonner';
 
-import {isLoggedIn, login} from '@/app/actions';
+import {isLoggedIn, login} from '@/app/actions/session';
 import {Button} from '@/components/ui/button';
 import {
   Card,

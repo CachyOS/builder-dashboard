@@ -19,7 +19,8 @@ import {
 import {toast} from 'sonner';
 import {useDebounce} from 'use-debounce';
 
-import {getUser, rebuildPackage, searchPackages} from '@/app/actions';
+import {rebuildPackage, searchPackages} from '@/app/actions/packages';
+import {getUser} from '@/app/actions/users';
 import {Avatar, AvatarFallback, AvatarImage} from '@/components/ui/avatar';
 import {
   CommandDialog,
@@ -204,7 +205,7 @@ export function CommandMenu() {
   }, []);
 
   useGenericShortcutListener('k', () => setOpen(value => !value));
-  useGenericShortcutListener('/', () => ref && ref.current?.focus(), true);
+  useGenericShortcutListener('/', () => ref?.current?.focus(), true);
 
   return (
     <CommandDialog onOpenChange={setOpen} open={open}>

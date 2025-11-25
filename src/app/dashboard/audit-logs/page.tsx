@@ -6,7 +6,8 @@ import {ChevronDown, Search} from 'lucide-react';
 import {useEffect, useMemo, useState} from 'react';
 import {toast} from 'sonner';
 
-import {getAuditLogs, getUser} from '@/app/actions';
+import {getAuditLogs} from '@/app/actions/audit-logs';
+import {getUser} from '@/app/actions/users';
 import Loader from '@/components/loader';
 import {Badge} from '@/components/ui/badge';
 import {Card} from '@/components/ui/card';
@@ -58,7 +59,7 @@ export default function AuditLogsPage() {
     }
     Promise.all(users.map(username => getUser(username))).then(results => {
       const userMap = new Map<string, UserProfile>();
-      results.forEach(user => {
+      for (const user of results) {
         if ('error' in user && user.error) {
           toast.error(`Failed to fetch a user profile: ${user.error}`, {
             closeButton: true,
@@ -67,7 +68,7 @@ export default function AuditLogsPage() {
         } else if ('username' in user && user.username) {
           userMap.set(user.username, user);
         }
-      });
+      }
       setUserData(userMap);
     });
   }, [users]);

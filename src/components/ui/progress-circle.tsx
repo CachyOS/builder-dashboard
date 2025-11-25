@@ -85,7 +85,6 @@ const ProgressCircle = React.forwardRef<SVGSVGElement, ProgressCircleProps>(
         data-max={max}
         data-value={safeValue ?? null}
         role="progressbar"
-        tremor-id="tremor-raw"
       >
         <svg
           className={cn('-rotate-90 transform', className)}

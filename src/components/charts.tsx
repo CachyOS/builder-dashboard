@@ -201,7 +201,7 @@ export function CategoryStatsDonutChart({
   );
   return (
     <ChartContainer
-      className="[&_.recharts-pie-label-text]:fill-foreground mx-auto aspect-square max-h-[32rem] pb-0"
+      className="[&_.recharts-pie-label-text]:fill-foreground mx-auto aspect-square max-h-128 pb-0"
       config={chartConfig}
     >
       <PieChart>

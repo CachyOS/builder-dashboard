@@ -1,6 +1,6 @@
 import {NextRequest, NextResponse} from 'next/server';
 
-import {getPackageLog} from '@/app/actions';
+import {getPackageLog} from '@/app/actions/packages';
 import {PackageMArch, packageMArchValues} from '@/lib/typings';
 
 export async function GET(
