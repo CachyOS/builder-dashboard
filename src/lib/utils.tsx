@@ -11,7 +11,14 @@ import {type ClassValue, clsx} from 'clsx';
 import {twMerge} from 'tailwind-merge';
 
 import {ProgressCircleVariants} from '@/components/ui/progress-circle';
-import {PackageStatus, RepoActionType} from '@/lib/typings';
+import {PackageStatus, RepoActionType, UserScope} from '@/lib/typings';
+
+export function checkScopes(
+  userScopes: UserScope[],
+  requiredScopes: UserScope[]
+) {
+  return requiredScopes.every(scope => userScopes.includes(scope));
+}
 
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
@@ -32,6 +39,19 @@ export function getColorClassNameByPackageStatus(status: PackageStatus) {
     case PackageStatus.UNKNOWN:
     default:
       return 'border-gray-500 text-gray-500 bg-gray-100 dark:bg-gray-500/10 dark:text-gray-500';
+  }
+}
+
+export function getColorClassNameByScope(scope: UserScope) {
+  switch (scope) {
+    case UserScope.ADMIN:
+      return 'text-red-500 bg-red-100 dark:bg-red-500/10 dark:text-red-500';
+    case UserScope.READ:
+      return 'text-blue-500 bg-blue-100 dark:bg-blue-500/10 dark:text-blue-500';
+    case UserScope.WRITE:
+      return 'text-green-500 bg-green-100 dark:bg-green-500/10 dark:text-green-500';
+    default:
+      return 'text-gray-500 bg-gray-100 dark:bg-gray-500/10 dark:text-gray-500';
   }
 }
 

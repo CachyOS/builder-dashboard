@@ -5,7 +5,7 @@ import Image from 'next/image';
 import * as React from 'react';
 import {toast} from 'sonner';
 
-import {changeServer} from '@/app/actions/users';
+import {changeServer} from '@/app/actions/session';
 import {
   DropdownMenu,
   DropdownMenuContent,

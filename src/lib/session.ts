@@ -35,6 +35,7 @@ export const defaultSession: SessionData = {
   tokens: CachyBuilderClient.servers.map(s => ({
     description: s.description,
     name: s.name,
+    scopes: [],
     token: '',
     url: s.url,
   })),

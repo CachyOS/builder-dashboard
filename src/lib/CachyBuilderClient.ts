@@ -37,11 +37,15 @@ import {
   SearchPackagesQuery,
   UserProfile,
   UserProfileSchema,
+  UserScope,
+  userScopeArray,
 } from '@/lib/typings';
+import {checkScopes} from '@/lib/utils';
 
 export interface ServerToken {
   description: string;
   name: string;
+  scopes: UserScope[];
   token: string;
   url: string;
 }
@@ -76,19 +80,23 @@ export default class CachyBuilderClient {
   private token: string;
   private tokens: ServerToken[];
 
-  constructor(serverIndex: number, token: string) {
+  constructor(
+    serverIndex: number,
+    tokens: ServerToken[] = CachyBuilderClient.servers.map(s => ({
+      description: s.description,
+      name: s.name,
+      scopes: [],
+      token: '',
+      url: s.url,
+    }))
+  ) {
     if (serverIndex == -1 || serverIndex >= CachyBuilderClient.servers.length) {
       throw new Error(`Invalid Server Index: ${serverIndex}`);
     }
     this.serverIndex = serverIndex;
     this.baseURL = CachyBuilderClient.servers[this.serverIndex].url;
-    this.token = token;
-    this.tokens = CachyBuilderClient.servers.map(s => ({
-      description: s.description,
-      name: s.name,
-      token: '',
-      url: s.url,
-    }));
+    this.token = tokens[this.serverIndex].token;
+    this.tokens = tokens;
   }
 
   public async bulkRebuildPackages(
@@ -100,6 +108,14 @@ export default class CachyBuilderClient {
     if (!request.success) {
       throw new Error(
         `Invalid package list request: ${request.error.issues.map(issue => issue.message).join(', ')}`
+      );
+    }
+
+    const {scopes} = this.tokens[this.serverIndex];
+
+    if (!checkScopes(scopes, [UserScope.READ, UserScope.WRITE])) {
+      throw new Error(
+        `You are not authorized to rebuild packages on this server. Required scopes: ${UserScope.READ},${UserScope.WRITE}; Got: ${scopes.join(', ')}`
       );
     }
 
@@ -400,6 +416,7 @@ export default class CachyBuilderClient {
     this.tokens = data.map((d, i) => ({
       description: CachyBuilderClient.servers[i].description,
       name: CachyBuilderClient.servers[i].name,
+      scopes: d.success ? [UserScope.READ] : [],
       token: d.success ? d.data.token : '',
       url: CachyBuilderClient.servers[i].url,
     }));
@@ -428,6 +445,14 @@ export default class CachyBuilderClient {
     if (!request.success) {
       throw new Error(
         `Invalid package request: ${request.error.issues.map(issue => issue.message).join(', ')}`
+      );
+    }
+
+    const {scopes} = this.tokens[this.serverIndex];
+
+    if (!checkScopes(scopes, [UserScope.READ, UserScope.WRITE])) {
+      throw new Error(
+        `You are not authorized to rebuild packages on this server. Required scopes: ${UserScope.READ},${UserScope.WRITE}; Got: ${this.tokens[this.serverIndex].scopes.join(', ')}`
       );
     }
 
@@ -486,6 +511,69 @@ export default class CachyBuilderClient {
     return data.data;
   }
 
+  public async syncLoggedInUserScopes(
+    allowInvalid = false,
+    clientHeaders = new Headers()
+  ) {
+    const validServers = this.tokens.filter(s => !!s.token);
+
+    if (validServers.length === 0) {
+      throw new Error('No valid servers to get profile scopes on');
+    }
+
+    const responses = await Promise.all(
+      validServers.map(async s =>
+        this._fetcher<UserScope[]>(
+          'user-profile/scopes',
+          clientHeaders,
+          APIVersion.V1,
+          {},
+          ResponseType.JSON,
+          s.url,
+          s.token
+        ).catch(() => [])
+      )
+    );
+
+    const data = responses.map(r => userScopeArray.safeParse(r));
+
+    const failedServers = data.filter(d => !d.success || d.data.length === 0);
+    const errors = data
+      .map((d, i) =>
+        d.success
+          ? undefined
+          : `Server: ${validServers[i].name} ${d.error.issues.map(issue => issue.message).join(', ')}`
+      )
+      .filter(x => !!x)
+      .join('\n');
+
+    if (failedServers.length > 0) {
+      if (allowInvalid && failedServers.length !== validServers.length) {
+        console.warn(
+          `[Get User Scopes] Some servers failed to respond correctly, but continuing due to allowInvalid flag.\n${errors}`
+        );
+      } else {
+        throw new Error(`Invalid response from server(s):\n${errors}`);
+      }
+    }
+
+    this.tokens = this.tokens.map(s => {
+      const idx = validServers.findIndex(vs => vs.name === s.name);
+      if (idx !== -1 && data[idx].success) {
+        return {
+          ...s,
+          scopes: data[idx].data,
+        };
+      }
+      return s;
+    });
+
+    return {
+      errors,
+      tokens: this.tokens,
+    };
+  }
+
   public async updateProfile(
     profile: UserProfile,
     updateAll = false,
@@ -500,12 +588,17 @@ export default class CachyBuilderClient {
       );
     }
 
-    const updateServers = CachyBuilderClient.servers.filter(
-      (_, i) => updateAll || i === this.serverIndex
+    const updateServers = this.tokens.filter(
+      (s, i) =>
+        (updateAll || i === this.serverIndex) &&
+        !!s.token &&
+        checkScopes(s.scopes, [UserScope.READ, UserScope.WRITE])
     );
 
     if (updateServers.length === 0) {
-      throw new Error('No servers to update profile on');
+      throw new Error(
+        `No servers to update profile on, you might not have required permissions to update your user profile. Required scopes: ${UserScope.READ},${UserScope.WRITE}`
+      );
     }
 
     const responses = await Promise.all(
@@ -519,7 +612,8 @@ export default class CachyBuilderClient {
             method: 'PUT',
           },
           ResponseType.JSON,
-          s.url
+          s.url,
+          s.token
         ).catch(() => ({}))
       )
     );
@@ -569,11 +663,15 @@ export default class CachyBuilderClient {
     apiVersion = APIVersion.V1,
     requestInit?: RequestInit,
     responseMode = ResponseType.JSON,
-    baseURLOverride = this.baseURL
+    baseURLOverride = this.baseURL,
+    authTokenOverride = this.token
   ): Promise<T> {
     return fetch(`${baseURLOverride}/${apiVersion}/${endpoint}`, {
+      ...requestInit,
       headers: {
-        ...(this.token ? {Authorization: `Bearer ${this.token}`} : {}),
+        ...(authTokenOverride
+          ? {Authorization: `Bearer ${authTokenOverride}`}
+          : {}),
         'Content-Type': 'application/json',
         'User-Agent':
           clientHeaders.get('User-Agent') ??
@@ -584,7 +682,6 @@ export default class CachyBuilderClient {
           '',
         ...requestInit?.headers,
       },
-      ...requestInit,
     }).then(res => this._processResponse<T>(res, responseMode));
   }
 

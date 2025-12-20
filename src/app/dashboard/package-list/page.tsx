@@ -49,11 +49,12 @@ import {
   packageRepoValues,
   PackageStatus,
   packageStatusValues,
+  UserScope,
 } from '@/lib/typings';
-import {packageStatusToIcon} from '@/lib/utils';
+import {checkScopes, packageStatusToIcon} from '@/lib/utils';
 
 export default function PackageListPage() {
-  const {activeServer} = useSidebar();
+  const {activeServer, scopes} = useSidebar();
   const [data, setData] = useState<ListPackageResponse | null>(null);
   const [error, setError] = useState<null | string>(null);
   const [pageSize, setPageSize] = useState(20);
@@ -85,6 +86,10 @@ export default function PackageListPage() {
 
   useGenericShortcutListener('/', primarySearchFilterShortcutCallback, true);
 
+  const enableRebuild = useMemo(
+    () => checkScopes(scopes, [UserScope.READ, UserScope.WRITE]),
+    [scopes]
+  );
   const columns: ColumnDef<Package>[] = useMemo(
     () => [
       {
@@ -241,7 +246,12 @@ export default function PackageListPage() {
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="max-w-48">
               <DropdownMenuItem
+                disabled={!enableRebuild}
+                hidden={!enableRebuild}
                 onSelect={() => {
+                  if (!enableRebuild) {
+                    return;
+                  }
                   const toastId = toast.loading(
                     `Requesting rebuild for PkgBase: ${row.original.pkgbase} MArch: ${row.original.march} Repo: ${row.original.repository}...`
                   );
@@ -271,7 +281,7 @@ export default function PackageListPage() {
               >
                 <RotateCcw /> Rebuild
               </DropdownMenuItem>
-              <DropdownMenuSeparator />
+              <DropdownMenuSeparator hidden={!enableRebuild} />
               <DropdownMenuItem
                 asChild
                 disabled={row.original.status !== PackageStatus.FAILED}
@@ -302,7 +312,7 @@ export default function PackageListPage() {
         id: 'actions',
       },
     ],
-    []
+    [enableRebuild]
   );
 
   const onMarchFilterUpdate = useCallback(
@@ -457,6 +467,7 @@ export default function PackageListPage() {
                   <div className="flex">
                     <Button
                       className="h-8"
+                      disabled={!enableRebuild}
                       onClick={() => setShowRebuildModal(true)}
                       size="sm"
                       variant="outline"

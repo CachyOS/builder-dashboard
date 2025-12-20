@@ -34,11 +34,12 @@ import {
   packageStatusValues,
   RebuildPackage,
   RebuildPackageList,
+  UserScope,
 } from '@/lib/typings';
-import {packageStatusToIcon} from '@/lib/utils';
+import {checkScopes, packageStatusToIcon} from '@/lib/utils';
 
 export default function RebuildQueuePackageListPage() {
-  const {activeServer} = useSidebar();
+  const {activeServer, scopes} = useSidebar();
   const [data, setData] = useState<null | RebuildPackageList>(null);
   const [error, setError] = useState<null | string>(null);
   const [rebuildPackages, setRebuildPackages] = useState<BasePackageWithIDList>(
@@ -54,6 +55,10 @@ export default function RebuildQueuePackageListPage() {
     setShowRebuildModal(state);
   }, []);
 
+  const enableRebuild = useMemo(
+    () => checkScopes(scopes, [UserScope.READ, UserScope.WRITE]),
+    [scopes]
+  );
   const columns: ColumnDef<RebuildPackage>[] = useMemo(
     () => [
       {
@@ -212,7 +217,12 @@ export default function RebuildQueuePackageListPage() {
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="max-w-48">
               <DropdownMenuItem
+                disabled={!enableRebuild}
+                hidden={!enableRebuild}
                 onSelect={() => {
+                  if (!enableRebuild) {
+                    return;
+                  }
                   const toastId = toast.loading(
                     `Requesting rebuild for PkgBase: ${row.original.pkgbase} MArch: ${row.original.march} Repo: ${row.original.repository}...`
                   );
@@ -242,7 +252,7 @@ export default function RebuildQueuePackageListPage() {
               >
                 <RotateCcw /> Rebuild
               </DropdownMenuItem>
-              <DropdownMenuSeparator />
+              <DropdownMenuSeparator hidden={!enableRebuild} />
               <DropdownMenuItem
                 asChild
                 disabled={row.original.status !== PackageStatus.FAILED}
@@ -273,7 +283,7 @@ export default function RebuildQueuePackageListPage() {
         id: 'actions',
       },
     ],
-    []
+    [enableRebuild]
   );
 
   useEffect(() => {
@@ -401,6 +411,7 @@ export default function RebuildQueuePackageListPage() {
               <div className="flex">
                 <Button
                   className="h-8"
+                  disabled={!enableRebuild}
                   onClick={() => setShowRebuildModal(true)}
                   size="sm"
                   variant="outline"

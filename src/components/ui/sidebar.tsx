@@ -23,6 +23,7 @@ import {
   TooltipTrigger,
 } from '@/components/ui/tooltip';
 import {useIsMobile} from '@/hooks/use-mobile';
+import {UserScope} from '@/lib/typings';
 import {cn} from '@/lib/utils';
 
 const SIDEBAR_COOKIE_NAME = 'sidebar_state';
@@ -39,9 +40,11 @@ type SidebarContextProps = {
   open: boolean;
   openMobile: boolean;
   refresh: boolean;
+  scopes: UserScope[];
   setActiveServer: (server: string) => void;
   setOpen: (open: boolean) => void;
   setOpenMobile: (open: boolean) => void;
+  setScopes: (scopes: UserScope[]) => void;
   state: 'collapsed' | 'expanded';
   toggleSidebar: () => void;
 };
@@ -322,6 +325,7 @@ function SidebarProvider({
   const [openMobile, setOpenMobile] = React.useState(false);
   const [refresh, setRefresh] = React.useState(false);
   const [activeServer, setActiveServer] = React.useState<string>('');
+  const [scopes, setScopes] = React.useState<UserScope[]>([]);
   const doRefresh = React.useCallback(() => setRefresh(curr => !curr), []);
 
   // This is the internal state of the sidebar.
@@ -376,9 +380,11 @@ function SidebarProvider({
       open,
       openMobile,
       refresh,
+      scopes,
       setActiveServer,
       setOpen,
       setOpenMobile,
+      setScopes,
       state,
       toggleSidebar,
     }),
@@ -389,6 +395,7 @@ function SidebarProvider({
       open,
       openMobile,
       refresh,
+      scopes,
       setOpen,
       state,
       toggleSidebar,
@@ -627,6 +634,7 @@ function SidebarMenuSkeleton({
 }) {
   // Random width between 50 to 90%.
   const width = React.useMemo(() => {
+    // eslint-disable-next-line react-hooks/purity
     return `${Math.floor(Math.random() * 40) + 50}%`;
   }, []);
 

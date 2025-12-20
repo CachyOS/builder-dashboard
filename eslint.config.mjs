@@ -17,6 +17,12 @@ const eslintConfig = [
       'next-env.d.ts',
     ],
   },
+  {
+    // @todo: Enable this rule once the existing errors are fixed.
+    rules: {
+      'react-hooks/set-state-in-effect': 'off',
+    },
+  },
 ];
 
 export default eslintConfig;

@@ -4,7 +4,7 @@ import {Activity, Logs, Package, PieChart, Repeat2} from 'lucide-react';
 import * as React from 'react';
 import {toast} from 'sonner';
 
-import {getAccessibleServers, getLoggedInUser} from '@/app/actions/users';
+import {getAccessibleServers, getLoggedInUser} from '@/app/actions/session';
 import {NavMain} from '@/components/nav-main';
 import {NavUser} from '@/components/nav-user';
 import {ServerSwitcher} from '@/components/server-switcher';
@@ -47,7 +47,7 @@ const items = [
   },
 ];
 export function AppSidebar({...props}: React.ComponentProps<typeof Sidebar>) {
-  const {activeServer, refresh} = useSidebar();
+  const {activeServer, refresh, setScopes} = useSidebar();
   const [servers, setServers] = React.useState(
     CachyBuilderClient.servers.map(server => ({
       accessible: true,
@@ -59,6 +59,7 @@ export function AppSidebar({...props}: React.ComponentProps<typeof Sidebar>) {
   const [user, setUser] = React.useState<UserData>({
     displayName: 'Loading...',
     profile_picture_url: '/cachyos-logo.svg',
+    scopes: [],
     username: 'Loading...',
   });
   React.useEffect(() => {
@@ -71,9 +72,10 @@ export function AppSidebar({...props}: React.ComponentProps<typeof Sidebar>) {
         });
       } else {
         setUser(data);
+        setScopes(data.scopes);
       }
     });
-  }, [activeServer, refresh]);
+  }, [activeServer, refresh, setScopes]);
   return (
     <Sidebar collapsible="icon" {...props}>
       <SidebarHeader>

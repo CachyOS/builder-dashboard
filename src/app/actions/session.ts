@@ -36,7 +36,7 @@ export async function getAccessibleServers() {
     return redirect('/');
   }
   return session.tokens.map((token, index) => ({
-    accessible: token.token !== '',
+    accessible: token.token !== '' && token.scopes.length > 0,
     active: index === session.serverIndex,
     description: token.description,
     name: token.name,
@@ -66,11 +66,13 @@ export async function getLoggedInUser(fullProfile = false) {
       user.profile_picture_url ?? '/cachyos-logo.svg';
     await session.save();
     if (fullProfile) {
+      user.scopes = session.tokens[session.serverIndex].scopes;
       return user;
     }
     return {
       displayName: session.displayName,
       profile_picture_url: session.profile_picture_url,
+      scopes: session.tokens[session.serverIndex].scopes,
       username: session.username,
     };
   } catch (error) {
@@ -94,7 +96,7 @@ export async function getSession() {
   }
   const cachyBuilderClient = new CachyBuilderClient(
     session.serverIndex,
-    session.tokens[session.serverIndex].token
+    session.tokens
   );
   return {
     cachyBuilderClient,
@@ -166,4 +168,30 @@ export async function logout() {
   const {session} = await getSession();
   session.destroy();
   return redirect('/');
+}
+
+export async function syncLoggedInUserScopes() {
+  const {cachyBuilderClient, session} = await getSession();
+  if (!session.isLoggedIn) {
+    return redirect('/');
+  }
+  try {
+    const {errors, tokens} = await cachyBuilderClient.syncLoggedInUserScopes(
+      true,
+      await headers()
+    );
+    session.tokens = tokens;
+    await session.save();
+    return {
+      success: tokens.length > 0,
+      warning:
+        errors.length > 0
+          ? `Failed to sync scopes on some servers, these servers will be disabled for current session:\n${errors}`
+          : undefined,
+    };
+  } catch (error) {
+    return {
+      error: `Failed to sync user scopes: ${error instanceof Error ? error.message : 'Unknown error'}`,
+    };
+  }
 }

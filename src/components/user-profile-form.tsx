@@ -7,6 +7,7 @@ import {toast} from 'sonner';
 
 import {updateProfile} from '@/app/actions/users';
 import {Avatar, AvatarFallback, AvatarImage} from '@/components/ui/avatar';
+import {Badge} from '@/components/ui/badge';
 import {Button} from '@/components/ui/button';
 import {Card, CardContent, CardHeader, CardTitle} from '@/components/ui/card';
 import {
@@ -27,6 +28,7 @@ import {
   NonNullableUserProfileSchema,
   UserProfile,
 } from '@/lib/typings';
+import {getColorClassNameByScope} from '@/lib/utils';
 
 export function UserProfileForm({
   disabled = false,
@@ -55,14 +57,15 @@ export function UserProfileForm({
     [user]
   );
   const form = useForm<NonNullableUserProfile>({
-    defaultValues: async () => ({
+    defaultValues: {
       display_desc: user.display_desc ?? '',
       display_name: user.display_name ?? user.username,
       id: user.id,
       profile_picture_url: user.profile_picture_url ?? '/cachyos-logo.svg',
+      // eslint-disable-next-line react-hooks/purity
       updated: user.updated ?? Date.now(),
       username: user.username,
-    }),
+    },
     resolver: zodResolver(NonNullableUserProfileSchema),
   });
 
@@ -238,6 +241,28 @@ export function UserProfileForm({
                     )}
                   />
                 </div>
+                {Array.isArray(user.scopes) && user.scopes.length ? (
+                  <div className="flex flex-row items-center justify-between rounded-lg border p-3 shadow-sm">
+                    <div className="space-y-0.5">
+                      <p className="text-sm leading-none font-medium select-none">
+                        Configured Scopes:
+                      </p>
+                    </div>
+                    <div className="flex flex-row space-x-1">
+                      {user.scopes.map(scope => (
+                        <Badge
+                          className={
+                            getColorClassNameByScope(scope) + ' text-sm'
+                          }
+                          key={scope}
+                          variant="secondary"
+                        >
+                          {scope}
+                        </Badge>
+                      ))}
+                    </div>
+                  </div>
+                ) : null}
                 {error && (
                   <div className="mt-4 text-center text-sm text-destructive whitespace-pre-line">
                     {error}

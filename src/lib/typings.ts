@@ -85,6 +85,23 @@ export enum ResponseType {
   TEXT = 'text',
 }
 
+export enum UserScope {
+  ADMIN = 'admin',
+  READ = 'read',
+  WRITE = 'write',
+}
+
+export const userScopeValues = Object.values(UserScope);
+
+export const userScope = z.enum(
+  UserScope,
+  `user Scope must be one of: ${userScopeValues.join(', ')}`
+);
+
+export const userScopeArray = z.array(
+  z.enum(UserScope, `user Scope must be one of: ${userScopeValues.join(', ')}`)
+);
+
 export interface ServerData {
   accessible: boolean;
   active: boolean;
@@ -95,6 +112,7 @@ export interface ServerData {
 export interface UserData {
   displayName: string;
   profile_picture_url: string;
+  scopes: UserScope[];
   username: string;
 }
 
@@ -231,6 +249,7 @@ export const UserProfileSchema = z.strictObject({
   display_name: z.string().nullable(),
   id: z.string().min(1, 'ID must be at least 1 character long'),
   profile_picture_url: z.string().nullable(),
+  scopes: z.optional(userScopeArray).nullable(),
   updated: z.number('Updated must be an positive integer').nonnegative(),
   username: z
     .string()
@@ -256,7 +275,7 @@ export const NonNullableUserProfileSchema = UserProfileSchema.extend({
     ],
     'Profile picture URL must be a valid URL or an empty string'
   ),
-});
+}).omit({scopes: true});
 
 export type NonNullableUserProfile = z.infer<
   typeof NonNullableUserProfileSchema
