@@ -1,8 +1,9 @@
 'use client';
-import {useParams} from 'next/navigation';
+import {useParams, useRouter} from 'next/navigation';
 import {useEffect, useState} from 'react';
 import {toast} from 'sonner';
 
+import {getLoggedInUser} from '@/app/actions/session';
 import {getUser} from '@/app/actions/users';
 import Loader from '@/components/loader';
 import {Card} from '@/components/ui/card';
@@ -11,9 +12,24 @@ import {UserProfileForm} from '@/components/user-profile-form';
 import {UserProfile} from '@/lib/typings';
 
 export default function UserProfilePage() {
+  const router = useRouter();
   const {username} = useParams<{username: string}>();
   const {activeServer} = useSidebar();
   const [user, setUser] = useState<null | UserProfile>(null);
+
+  useEffect(() => {
+    getLoggedInUser(false).then(data => {
+      if ('error' in data) {
+        toast.error(data.error, {
+          closeButton: true,
+          duration: Infinity,
+        });
+      } else if (username === data.username) {
+        router.replace('/dashboard/profile');
+      }
+    });
+  }, [username, router]);
+
   useEffect(() => {
     if (!username) {
       return;
