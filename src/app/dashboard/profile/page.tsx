@@ -41,11 +41,11 @@ export default function UserProfilePage() {
     <Card className="flex min-h-full w-full items-center justify-center p-6 md:p-10">
       <div className="w-full max-w-lg">
         {user ? (
-          enableEdits ? (
-            <UserProfileForm onUserUpdate={onUserUpdate} user={user} />
-          ) : (
-            <UserProfileForm disabled onUserUpdate={() => {}} user={user} />
-          )
+          <UserProfileForm
+            disabled={!enableEdits}
+            onUserUpdate={onUserUpdate}
+            user={user}
+          />
         ) : (
           <Loader animate text="Loading user profile..." />
         )}
