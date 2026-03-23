@@ -26,6 +26,7 @@ export default function UserProfilePage() {
   );
   useEffect(() => {
     setUser(null);
+    // TODO: Extract into global app state to avoid refetching.
     getLoggedInUser(true).then(data => {
       if ('error' in data) {
         toast.error(data.error, {
@@ -42,7 +43,7 @@ export default function UserProfilePage() {
       <div className="w-full max-w-lg">
         {user ? (
           <UserProfileForm
-            disabled={!enableEdits}
+            canEditProfile={enableEdits}
             onUserUpdate={onUserUpdate}
             user={user}
           />

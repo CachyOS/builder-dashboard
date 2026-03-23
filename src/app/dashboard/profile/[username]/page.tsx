@@ -18,6 +18,7 @@ export default function UserProfilePage() {
   const [user, setUser] = useState<null | UserProfile>(null);
 
   useEffect(() => {
+    // TODO: Extract into global app state to avoid refetching.
     getLoggedInUser(false).then(data => {
       if ('error' in data) {
         toast.error(data.error, {
@@ -50,7 +51,7 @@ export default function UserProfilePage() {
     <Card className="flex min-h-full w-full items-center justify-center p-6 md:p-10">
       <div className="w-full max-w-lg">
         {user ? (
-          <UserProfileForm disabled onUserUpdate={() => {}} user={user} />
+          <UserProfileForm user={user} />
         ) : (
           <Loader animate text="Loading user profile..." />
         )}

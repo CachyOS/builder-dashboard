@@ -1,4 +1,5 @@
 'use client';
+
 import {zodResolver} from '@hookform/resolvers/zod';
 import {Undo2} from 'lucide-react';
 import {useCallback, useMemo, useState} from 'react';
@@ -31,12 +32,12 @@ import {
 import {getColorClassNameByScope} from '@/lib/utils';
 
 export function UserProfileForm({
-  disabled = false,
-  onUserUpdate,
+  canEditProfile = false,
+  onUserUpdate = () => {},
   user,
 }: Readonly<{
-  disabled?: boolean;
-  onUserUpdate: (user: UserProfile) => void;
+  canEditProfile?: boolean;
+  onUserUpdate?: (user: UserProfile) => void;
   user: UserProfile;
 }>) {
   const [error, setError] = useState<null | string>(null);
@@ -71,7 +72,7 @@ export function UserProfileForm({
 
   const onSubmit = useCallback(
     (data: NonNullableUserProfile) => {
-      if (submitting || disabled) {
+      if (submitting || !canEditProfile) {
         return;
       }
       setSubmitting(true);
@@ -116,7 +117,7 @@ export function UserProfileForm({
           setSubmitting(false);
         });
     },
-    [submitting, disabled, updateAllServers, onUserUpdate]
+    [submitting, canEditProfile, updateAllServers, onUserUpdate]
   );
 
   return (
@@ -169,9 +170,9 @@ export function UserProfileForm({
                         <FormLabel>Display Name</FormLabel>
                         <FormControl>
                           <Input
-                            {...(disabled
-                              ? {'aria-readonly': true, disabled: true}
-                              : {})}
+                            {...(canEditProfile
+                              ? {}
+                              : {'aria-readonly': true, disabled: true})}
                             {...field}
                           />
                         </FormControl>
@@ -191,9 +192,9 @@ export function UserProfileForm({
                           <Textarea
                             className="resize-none"
                             placeholder="Tell us a little bit about yourself!"
-                            {...(disabled
-                              ? {'aria-readonly': true, disabled: true}
-                              : {})}
+                            {...(canEditProfile
+                              ? {}
+                              : {'aria-readonly': true, disabled: true})}
                             {...field}
                           />
                         </FormControl>
@@ -212,24 +213,19 @@ export function UserProfileForm({
                         <FormControl>
                           <div className="flex items-center gap-2">
                             <Input
-                              {...(disabled
-                                ? {'aria-readonly': true, disabled: true}
-                                : {})}
+                              {...(canEditProfile
+                                ? {}
+                                : {'aria-readonly': true, disabled: true})}
                               {...field}
                             />
-                            {!disabled && (
+                            {canEditProfile && (
                               <Button
                                 onClick={() => {
-                                  if (!disabled) {
-                                    field.onChange('/cachyos-logo.svg');
-                                  }
+                                  field.onChange('/cachyos-logo.svg');
                                 }}
                                 size="icon"
                                 type="button"
                                 variant="outline"
-                                {...(disabled
-                                  ? {'aria-readonly': true, disabled: true}
-                                  : {})}
                               >
                                 <Undo2 />
                               </Button>
@@ -241,7 +237,7 @@ export function UserProfileForm({
                     )}
                   />
                 </div>
-                {Array.isArray(user.scopes) && user.scopes.length ? (
+                {user.scopes?.length ? (
                   <div className="flex flex-row items-center justify-between rounded-lg border p-3 shadow-sm">
                     <div className="space-y-0.5">
                       <p className="text-sm leading-none font-medium select-none">
@@ -273,7 +269,7 @@ export function UserProfileForm({
                     {warning}
                   </div>
                 )}
-                {!disabled && (
+                {canEditProfile && (
                   <>
                     <div className="flex flex-row items-center justify-between rounded-lg border p-3 shadow-sm">
                       <div className="space-y-0.5">
