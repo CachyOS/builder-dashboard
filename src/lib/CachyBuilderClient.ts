@@ -35,6 +35,7 @@ import {
   RepoActionsResponseSchema,
   ResponseType,
   SearchPackagesQuery,
+  UpdateUserScopesRequestSchema,
   UserProfile,
   UserProfileSchema,
   UserScope,
@@ -261,6 +262,34 @@ export default class CachyBuilderClient {
     if (!data.success) {
       throw new Error(
         `Invalid user profile response: ${data.error.issues.map(issue => issue.message).join(', ')}`
+      );
+    }
+
+    return data.data;
+  }
+
+  public async getUserScopes(username: string, clientHeaders = new Headers()) {
+    const {scopes} = this.tokens[this.serverIndex];
+
+    if (!checkScopes(scopes, [UserScope.READ, UserScope.ADMIN])) {
+      throw new Error(
+        `You are not authorized to view scopes for other users. Required scopes: ${UserScope.READ},${UserScope.ADMIN}; Got: ${scopes.join(', ')}`
+      );
+    }
+
+    const response = await this._fetcher<UserScope[]>(
+      `profile/${username}/scopes`,
+      clientHeaders,
+      APIVersion.V1,
+      {},
+      ResponseType.JSON
+    ).catch(() => []);
+
+    const data = userScopeArray.safeParse(response);
+
+    if (!data.success) {
+      throw new Error(
+        `Invalid user scopes response: ${data.error.issues.map(issue => issue.message).join(', ')}`
       );
     }
 
@@ -655,6 +684,72 @@ export default class CachyBuilderClient {
     this.serverIndex = index;
     this.baseURL = CachyBuilderClient.servers[this.serverIndex].url;
     this.token = this.tokens[index].token;
+  }
+
+  public async updateUserScopes(
+    username: string,
+    scopes: UserScope[],
+    updateAll = false,
+    clientHeaders = new Headers()
+  ) {
+    const request = UpdateUserScopesRequestSchema.safeParse({scopes});
+
+    if (!request.success) {
+      throw new Error(
+        `Invalid update user scopes request: ${request.error.issues.map(issue => issue.message).join(', ')}`
+      );
+    }
+
+    const updateServers = this.tokens.filter(
+      (s, i) =>
+        (updateAll || i === this.serverIndex) &&
+        !!s.token &&
+        checkScopes(s.scopes, [UserScope.ADMIN, UserScope.WRITE])
+    );
+
+    if (updateServers.length === 0) {
+      throw new Error(
+        `No servers to update user scopes on, you might not have required permissions to update user scopes. Required scopes: [${UserScope.ADMIN}, ${UserScope.WRITE}]`
+      );
+    }
+
+    const responses = await Promise.all(
+      updateServers.map(async s =>
+        this._fetcher<UserProfile[]>(
+          `profile/${username}/scopes`,
+          clientHeaders,
+          APIVersion.V1,
+          {
+            body: JSON.stringify(request.data),
+            method: 'PUT',
+          },
+          ResponseType.JSON,
+          s.url,
+          s.token
+        ).catch(() => [])
+      )
+    );
+
+    const data = responses.map(r => UserProfileSchema.safeParse(r));
+
+    const failedServers = data.filter(d => !d.success);
+    const errors = data
+      .map((d, i) =>
+        d.success
+          ? undefined
+          : `Server: ${updateServers[i].name} ${d.error.issues.map(issue => issue.message).join(', ')}`
+      )
+      .filter(x => !!x)
+      .join('\n');
+
+    if (failedServers.length > 0) {
+      throw new Error(`Invalid response from server(s):\n${errors}`);
+    }
+
+    return {
+      errors,
+      validServers: updateServers.filter((_, i) => data[i].success),
+    };
   }
 
   private async _fetcher<T>(

@@ -325,6 +325,7 @@ function SidebarProvider({
   const [openMobile, setOpenMobile] = React.useState(false);
   const [refresh, setRefresh] = React.useState(false);
   const [activeServer, setActiveServer] = React.useState<string>('');
+  // TODO: Extract into global auth context.
   const [scopes, setScopes] = React.useState<UserScope[]>([]);
   const doRefresh = React.useCallback(() => setRefresh(curr => !curr), []);
 

@@ -4,17 +4,18 @@ import {useEffect, useState} from 'react';
 import {toast} from 'sonner';
 
 import {getLoggedInUser} from '@/app/actions/session';
-import {getUser} from '@/app/actions/users';
+import {getFullUserProfile, getUser} from '@/app/actions/users';
 import Loader from '@/components/loader';
 import {Card} from '@/components/ui/card';
 import {useSidebar} from '@/components/ui/sidebar';
 import {UserProfileForm} from '@/components/user-profile-form';
-import {UserProfile} from '@/lib/typings';
+import {UserProfile, UserScope} from '@/lib/typings';
+import {checkScopes} from '@/lib/utils';
 
 export default function UserProfilePage() {
   const router = useRouter();
   const {username} = useParams<{username: string}>();
-  const {activeServer} = useSidebar();
+  const {activeServer, scopes} = useSidebar();
   const [user, setUser] = useState<null | UserProfile>(null);
 
   useEffect(() => {
@@ -31,27 +32,32 @@ export default function UserProfilePage() {
     });
   }, [username, router]);
 
+  const enableScopes = checkScopes(scopes, [UserScope.ADMIN, UserScope.WRITE]);
+
   useEffect(() => {
     if (!username) {
       return;
     }
     setUser(null);
-    getUser(username).then(data => {
-      if ('error' in data) {
-        toast.error(data.error, {
-          closeButton: true,
-          duration: Infinity,
-        });
-      } else {
-        setUser(data);
+    (enableScopes ? getFullUserProfile(username) : getUser(username)).then(
+      data => {
+        if ('error' in data) {
+          toast.error(data.error, {
+            closeButton: true,
+            duration: Infinity,
+          });
+        } else {
+          setUser(data);
+        }
       }
-    });
-  }, [activeServer, username]);
+    );
+  }, [activeServer, username, enableScopes]);
+
   return (
     <Card className="flex min-h-full w-full items-center justify-center p-6 md:p-10">
       <div className="w-full max-w-lg">
         {user ? (
-          <UserProfileForm user={user} />
+          <UserProfileForm canEditScopes={enableScopes} user={user} />
         ) : (
           <Loader animate text="Loading user profile..." />
         )}

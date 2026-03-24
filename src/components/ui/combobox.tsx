@@ -1,7 +1,6 @@
 import {Check, PlusCircle} from 'lucide-react';
 
-import {Badge} from '@/components/ui//badge';
-import {Separator} from '@/components/ui//separator';
+import {Badge} from '@/components/ui/badge';
 import {Button} from '@/components/ui/button';
 import {
   Command,
@@ -13,10 +12,15 @@ import {
   CommandSeparator,
 } from '@/components/ui/command';
 import {Popover, PopoverContent, PopoverTrigger} from '@/components/ui/popover';
+import {Separator} from '@/components/ui/separator';
 import {cn} from '@/lib/utils';
 
 export interface ComboBoxProps<T> {
+  badgeRenderer?: typeof renderBadge;
+  buttonClassName?: string;
+  clearText?: string;
   items: T[];
+  maxSelectedItemsToShow?: number;
   onItemsUpdate: (items: T[]) => void;
   searchNoResultsText?: string;
   searchPlaceholder?: string;
@@ -25,7 +29,11 @@ export interface ComboBoxProps<T> {
 }
 
 export function ComboBox<T extends string>({
+  badgeRenderer = renderBadge,
+  buttonClassName,
+  clearText = 'Clear filters',
   items,
+  maxSelectedItemsToShow = 2,
   onItemsUpdate,
   searchNoResultsText = 'No results found',
   searchPlaceholder = 'Search...',
@@ -35,7 +43,11 @@ export function ComboBox<T extends string>({
   return (
     <Popover>
       <PopoverTrigger asChild>
-        <Button className="h-8 border-dashed" size="sm" variant="outline">
+        <Button
+          className={cn('h-8 border-dashed', buttonClassName)}
+          size="sm"
+          variant="outline"
+        >
           <PlusCircle />
           {title}
           {selectedItems.length > 0 && (
@@ -48,7 +60,7 @@ export function ComboBox<T extends string>({
                 {selectedItems.length}
               </Badge>
               <div className="hidden space-x-1 lg:flex">
-                {selectedItems.length > 2 ? (
+                {selectedItems.length > maxSelectedItemsToShow ? (
                   <Badge
                     className="rounded-sm px-1 font-normal"
                     variant="secondary"
@@ -58,15 +70,7 @@ export function ComboBox<T extends string>({
                 ) : (
                   items
                     .filter(option => selectedItems.includes(option))
-                    .map(option => (
-                      <Badge
-                        className="rounded-sm px-1 font-normal"
-                        key={option}
-                        variant="secondary"
-                      >
-                        {option}
-                      </Badge>
-                    ))
+                    .map(badgeRenderer)
                 )}
               </div>
             </>
@@ -111,7 +115,7 @@ export function ComboBox<T extends string>({
                     className="justify-center text-center"
                     onSelect={() => onItemsUpdate([])}
                   >
-                    Clear filters
+                    {clearText}
                   </CommandItem>
                 </CommandGroup>
               </>
@@ -120,5 +124,17 @@ export function ComboBox<T extends string>({
         </Command>
       </PopoverContent>
     </Popover>
+  );
+}
+
+function renderBadge<T extends string>(item: T) {
+  return (
+    <Badge
+      className="rounded-sm px-1 font-normal"
+      key={item}
+      variant="secondary"
+    >
+      {item}
+    </Badge>
   );
 }

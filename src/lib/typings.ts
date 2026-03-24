@@ -275,7 +275,11 @@ export const NonNullableUserProfileSchema = UserProfileSchema.extend({
     ],
     'Profile picture URL must be a valid URL or an empty string'
   ),
-}).omit({scopes: true});
+  scopes: z.array(
+    userScope,
+    'Each scope must be one of the defined user scopes'
+  ),
+});
 
 export type NonNullableUserProfile = z.infer<
   typeof NonNullableUserProfileSchema
@@ -442,4 +446,12 @@ export const BulkRebuildPackagesResponseSchema = z
 
 export type BulkRebuildPackagesResponse = z.infer<
   typeof BulkRebuildPackagesResponseSchema
+>;
+
+export const UpdateUserScopesRequestSchema = z.strictObject({
+  scopes: userScopeArray,
+});
+
+export type UpdateUserScopesRequest = z.infer<
+  typeof UpdateUserScopesRequestSchema
 >;

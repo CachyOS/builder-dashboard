@@ -4,7 +4,26 @@ import {headers} from 'next/headers';
 import {redirect} from 'next/navigation';
 
 import {getSession} from '@/app/actions/session';
-import {UserProfile} from '@/lib/typings';
+import {NonNullableUserProfile, UserProfile} from '@/lib/typings';
+
+export async function getFullUserProfile(username: string) {
+  const {cachyBuilderClient, session} = await getSession();
+  if (!session.isLoggedIn) {
+    return redirect('/');
+  }
+  try {
+    const [profile, scopes] = await Promise.all([
+      cachyBuilderClient.getUserProfile(username, await headers()),
+      cachyBuilderClient.getUserScopes(username, await headers()),
+    ]);
+    profile.scopes = scopes;
+    return profile;
+  } catch (error) {
+    return {
+      error: `Failed to get user profile: ${error instanceof Error ? error.message : 'Unknown error'}`,
+    };
+  }
+}
 
 export async function getUser(username: string) {
   const {cachyBuilderClient, session} = await getSession();
@@ -57,6 +76,35 @@ export async function updateProfile(profile: UserProfile, updateAll = false) {
   } catch (error) {
     return {
       error: `Failed to update profile: ${error instanceof Error ? error.message : 'Unknown error'}`,
+    };
+  }
+}
+
+export async function updateScopes(
+  data: Pick<NonNullableUserProfile, 'scopes' | 'username'>,
+  updateAll = false
+) {
+  const {cachyBuilderClient, session} = await getSession();
+  if (!session.isLoggedIn) {
+    return redirect('/');
+  }
+  try {
+    const {errors, validServers} = await cachyBuilderClient.updateUserScopes(
+      data.username,
+      data.scopes,
+      updateAll,
+      await headers()
+    );
+    return {
+      success: validServers.length > 0,
+      warning:
+        errors.length > 0
+          ? `Failed to update scopes on some servers, you can try again later:\n${errors}`
+          : undefined,
+    };
+  } catch (error) {
+    return {
+      error: `Failed to update scopes: ${error instanceof Error ? error.message : 'Unknown error'}`,
     };
   }
 }
