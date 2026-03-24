@@ -6,11 +6,12 @@ import {useCallback, useMemo, useState} from 'react';
 import {useForm} from 'react-hook-form';
 import {toast} from 'sonner';
 
-import {updateProfile} from '@/app/actions/users';
+import {updateProfile, updateScopes} from '@/app/actions/users';
 import {Avatar, AvatarFallback, AvatarImage} from '@/components/ui/avatar';
 import {Badge} from '@/components/ui/badge';
 import {Button} from '@/components/ui/button';
 import {Card, CardContent, CardHeader, CardTitle} from '@/components/ui/card';
+import {ComboBox} from '@/components/ui/combobox';
 import {
   Form,
   FormControl,
@@ -28,18 +29,23 @@ import {
   NonNullableUserProfile,
   NonNullableUserProfileSchema,
   UserProfile,
+  UserScope,
+  userScopeValues,
 } from '@/lib/typings';
-import {getColorClassNameByScope} from '@/lib/utils';
+import {cn, getColorClassNameByScope} from '@/lib/utils';
 
 export function UserProfileForm({
   canEditProfile = false,
+  canEditScopes = false,
   onUserUpdate = () => {},
   user,
 }: Readonly<{
   canEditProfile?: boolean;
+  canEditScopes?: boolean;
   onUserUpdate?: (user: UserProfile) => void;
   user: UserProfile;
 }>) {
+  const canEdit = canEditProfile || canEditScopes;
   const [error, setError] = useState<null | string>(null);
   const [warning, setWarning] = useState<null | string>(null);
   const [submitting, setSubmitting] = useState(false);
@@ -58,28 +64,57 @@ export function UserProfileForm({
     [user]
   );
   const form = useForm<NonNullableUserProfile>({
-    defaultValues: {
+    resolver: zodResolver(NonNullableUserProfileSchema),
+    values: {
       display_desc: user.display_desc ?? '',
       display_name: user.display_name ?? user.username,
       id: user.id,
       profile_picture_url: user.profile_picture_url ?? '/cachyos-logo.svg',
+      scopes: user.scopes?.length ? user.scopes : [],
       // eslint-disable-next-line react-hooks/purity
       updated: user.updated ?? Date.now(),
       username: user.username,
     },
-    resolver: zodResolver(NonNullableUserProfileSchema),
   });
 
   const onSubmit = useCallback(
     (data: NonNullableUserProfile) => {
-      if (submitting || !canEditProfile) {
+      if (submitting || !canEdit) {
         return;
       }
       setSubmitting(true);
       setError(null);
       setWarning(null);
       const toastId = toast.loading('Updating profile...');
-      updateProfile(data, updateAllServers)
+
+      let updateFunc;
+      if (canEditProfile && canEditScopes) {
+        updateFunc = (data: NonNullableUserProfile, updateAll = false) =>
+          Promise.all([
+            updateProfile(data, updateAll),
+            updateScopes(data, updateAll),
+          ]).then(([profileRes, scopesRes]) => {
+            const error = profileRes.error || scopesRes.error;
+            const warning = profileRes.warning || scopesRes.warning;
+            return {
+              error,
+              profile: profileRes.profile,
+              warning,
+            };
+          });
+      } else if (canEditProfile) {
+        updateFunc = updateProfile;
+      } else if (canEditScopes) {
+        updateFunc = updateScopes;
+      } else {
+        updateFunc = () =>
+          Promise.resolve({
+            error: 'You do not have permission to edit the profile.',
+            warning: undefined,
+          });
+      }
+
+      updateFunc(data, updateAllServers)
         .then(res => {
           if (res.error) {
             setError(res.error);
@@ -101,7 +136,7 @@ export function UserProfileForm({
           } else {
             toast.success('Profile updated successfully!', {id: toastId});
           }
-          if (res.profile) {
+          if ('profile' in res && res.profile) {
             onUserUpdate(res.profile);
           }
         })
@@ -117,7 +152,14 @@ export function UserProfileForm({
           setSubmitting(false);
         });
     },
-    [submitting, canEditProfile, updateAllServers, onUserUpdate]
+    [
+      submitting,
+      canEdit,
+      canEditProfile,
+      canEditScopes,
+      updateAllServers,
+      onUserUpdate,
+    ]
   );
 
   return (
@@ -237,7 +279,46 @@ export function UserProfileForm({
                     )}
                   />
                 </div>
-                {user.scopes?.length ? (
+                {canEditScopes ? (
+                  <div className="grid gap-3">
+                    <FormField
+                      control={form.control}
+                      name="scopes"
+                      render={({field}) => (
+                        <FormItem>
+                          <FormLabel>Configured Scopes</FormLabel>
+                          <FormControl>
+                            <ComboBox
+                              badgeRenderer={scope => (
+                                <Badge
+                                  className={cn(
+                                    'text-sm',
+                                    getColorClassNameByScope(scope as UserScope)
+                                  )}
+                                  key={scope}
+                                >
+                                  {scope}
+                                </Badge>
+                              )}
+                              buttonClassName="h-10 border-solid"
+                              clearText="Clear scopes"
+                              items={userScopeValues}
+                              maxSelectedItemsToShow={4}
+                              onItemsUpdate={scopes =>
+                                form.setValue('scopes', scopes)
+                              }
+                              searchNoResultsText="No scopes found"
+                              searchPlaceholder="Search scopes..."
+                              selectedItems={field.value}
+                              title="Scopes"
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  </div>
+                ) : user.scopes?.length ? (
                   <div className="flex flex-row items-center justify-between rounded-lg border p-3 shadow-sm">
                     <div className="space-y-0.5">
                       <p className="text-sm leading-none font-medium select-none">
@@ -247,9 +328,10 @@ export function UserProfileForm({
                     <div className="flex flex-row space-x-1">
                       {user.scopes.map(scope => (
                         <Badge
-                          className={
-                            getColorClassNameByScope(scope) + ' text-sm'
-                          }
+                          className={cn(
+                            'text-sm',
+                            getColorClassNameByScope(scope)
+                          )}
                           key={scope}
                           variant="secondary"
                         >
@@ -269,7 +351,7 @@ export function UserProfileForm({
                     {warning}
                   </div>
                 )}
-                {canEditProfile && (
+                {canEdit && (
                   <>
                     <div className="flex flex-row items-center justify-between rounded-lg border p-3 shadow-sm">
                       <div className="space-y-0.5">
