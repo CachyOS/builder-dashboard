@@ -4,12 +4,6 @@ import {useEffect, useState} from 'react';
 
 const numericKeyRegex = /^\d$/;
 
-const clearTimer = (timer: NodeJS.Timeout | null) => {
-  if (timer) {
-    clearTimeout(timer);
-  }
-};
-
 export function useGenericShortcutListener(
   key: string,
   callback: () => void,
@@ -39,9 +33,9 @@ export function useGenericVimShortcutListener(
   callback: () => void
 ) {
   const [colonAndKeyPressed, setColonAndKeyPressed] = useState(false);
-  let timer: NodeJS.Timeout | null = null;
 
   useEffect(() => {
+    let timer: NodeJS.Timeout | undefined;
     let colonPressed = false;
     const handleKeyDown = (event: KeyboardEvent) => {
       if (event.key === ':') {
@@ -55,10 +49,10 @@ export function useGenericVimShortcutListener(
       ) {
         setColonAndKeyPressed(true);
         colonPressed = false;
-        clearTimer(timer);
+        clearTimeout(timer);
       } else {
         colonPressed = false;
-        clearTimer(timer);
+        clearTimeout(timer);
       }
     };
 
@@ -66,9 +60,9 @@ export function useGenericVimShortcutListener(
 
     return () => {
       globalThis.removeEventListener('keydown', handleKeyDown);
-      clearTimer(timer);
+      clearTimeout(timer);
     };
-  }, []);
+  }, [key]);
 
   useEffect(() => {
     if (colonAndKeyPressed) {
@@ -102,9 +96,9 @@ export function useNumericKeyVimShortcutListener(
   const [colonAndKeyPressed, setColonAndKeyPressed] = useState<null | number>(
     null
   );
-  let timer: NodeJS.Timeout | null = null;
 
   useEffect(() => {
+    let timer: NodeJS.Timeout | undefined;
     let colonPressed = false;
     const handleKeyDown = (event: KeyboardEvent) => {
       const key = event.key.toLowerCase();
@@ -116,10 +110,10 @@ export function useNumericKeyVimShortcutListener(
       } else if (colonPressed && numericKeyRegex.test(key)) {
         setColonAndKeyPressed(Number.parseInt(key, 10));
         colonPressed = false;
-        clearTimer(timer);
+        clearTimeout(timer);
       } else {
         colonPressed = false;
-        clearTimer(timer);
+        clearTimeout(timer);
       }
     };
 
@@ -127,7 +121,7 @@ export function useNumericKeyVimShortcutListener(
 
     return () => {
       globalThis.removeEventListener('keydown', handleKeyDown);
-      clearTimer(timer);
+      clearTimeout(timer);
     };
   }, []);
 

@@ -14,15 +14,12 @@ import {
 export async function getPackageStats(
   type: PackageStatsType.CATEGORY
 ): Promise<PackageStatsList | {error: string}>;
-
 export async function getPackageStats(
   type: PackageStatsType.MONTH
 ): Promise<ProcessedPackageStatsByMonthList | {error: string}>;
-
 export async function getPackageStats(
   type: PackageStatsType.BUILD_TIME
 ): Promise<BuildTimeStatsDataList | {error: string}>;
-
 export async function getPackageStats(
   type: PackageStatsType = PackageStatsType.CATEGORY
 ): Promise<
