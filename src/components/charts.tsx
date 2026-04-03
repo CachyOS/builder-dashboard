@@ -15,7 +15,10 @@ import {
   XAxis,
   YAxis,
 } from 'recharts';
-import {ValueType} from 'recharts/types/component/DefaultTooltipContent';
+import {
+  NameType,
+  ValueType,
+} from 'recharts/types/component/DefaultTooltipContent';
 
 import {
   ChartConfig,
@@ -293,14 +296,14 @@ export function MonthlyStatsAreaChart({
   );
 }
 
-function buildStatsMemoryContentFormatter(value: ValueType, name: string) {
+function buildStatsMemoryContentFormatter(value: ValueType, name: NameType) {
   if (name === 'average_max_rss' && typeof value === 'number') {
     return prettyBytes(value * 1024);
   }
   return value.toLocaleString();
 }
 
-function buildStatsTimeContentFormatter(value: ValueType, name?: string) {
+function buildStatsTimeContentFormatter(value: ValueType, name?: NameType) {
   if (
     (!name || name === 'average_user_time' || name === 'average_build_time') &&
     typeof value === 'number'

@@ -46,11 +46,9 @@ export async function getAccessibleServers() {
 export async function getLoggedInUser(
   fullProfile: false
 ): Promise<UserData | {error: string}>;
-
 export async function getLoggedInUser(
   fullProfile: true
 ): Promise<UserProfile | {error: string}>;
-
 export async function getLoggedInUser(fullProfile = false) {
   const {cachyBuilderClient, session} = await getSession();
   if (!session.isLoggedIn) {
