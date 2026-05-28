@@ -18,7 +18,7 @@ export async function bulkRebuildPackages(packages: BasePackageWithIDList) {
     return redirect('/');
   }
   try {
-    const response = await cachyBuilderClient.bulkRebuildPackages(
+    const response = await cachyBuilderClient.packages.bulkRebuildPackages(
       packages,
       await headers()
     );
@@ -40,7 +40,7 @@ export async function getPackageLog(
     return redirect('/');
   }
   try {
-    const log = await cachyBuilderClient.getPackageLog(
+    const log = await cachyBuilderClient.packages.getPackageLog(
       pkg,
       march,
       strip,
@@ -60,7 +60,7 @@ export async function listPackages(query?: ListPackagesQuery) {
     return redirect('/');
   }
   try {
-    const packages = await cachyBuilderClient.listPackages(
+    const packages = await cachyBuilderClient.packages.listPackages(
       query,
       await headers()
     );
@@ -78,7 +78,7 @@ export async function listRebuildPackages() {
     return redirect('/');
   }
   try {
-    const packages = await cachyBuilderClient.listRebuildPackages(
+    const packages = await cachyBuilderClient.packages.listRebuildPackages(
       await headers()
     );
     return packages;
@@ -99,7 +99,7 @@ export async function rebuildPackage(
     return redirect('/');
   }
   try {
-    const response = await cachyBuilderClient.rebuildPackage(
+    const response = await cachyBuilderClient.packages.rebuildPackage(
       {march, pkgbase, repository},
       await headers()
     );
@@ -117,7 +117,7 @@ export async function searchPackages(query: SearchPackagesQuery) {
     return redirect('/');
   }
   try {
-    const packages = await cachyBuilderClient.searchPackages(
+    const packages = await cachyBuilderClient.packages.searchPackages(
       query,
       await headers()
     );

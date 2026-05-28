@@ -12,7 +12,7 @@ export async function listRepoActions(query?: ListRepoActionsQuery) {
     return redirect('/');
   }
   try {
-    const actions = await cachyBuilderClient
+    const actions = await cachyBuilderClient.repoActions
       .listRepoActions(query, await headers())
       .then(response => {
         return {

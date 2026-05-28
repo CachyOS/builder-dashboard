@@ -37,7 +37,7 @@ export async function getPackageStats(
   }
   try {
     if (type === PackageStatsType.MONTH) {
-      const stats = await cachyBuilderClient.getPackageStatsByMonth(
+      const stats = await cachyBuilderClient.stats.getPackageStatsByMonth(
         await headers()
       );
       return stats.map(stat => ({
@@ -47,9 +47,9 @@ export async function getPackageStats(
           .slice(0, 7),
       }));
     } else if (type === PackageStatsType.CATEGORY) {
-      return cachyBuilderClient.getPackageStatsByCategory(await headers());
+      return cachyBuilderClient.stats.getPackageStatsByCategory(await headers());
     } else {
-      return cachyBuilderClient.getBuildTimePackageStats(await headers());
+      return cachyBuilderClient.stats.getBuildTimePackageStats(await headers());
     }
   } catch (error) {
     return {

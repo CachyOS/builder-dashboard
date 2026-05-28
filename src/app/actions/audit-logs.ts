@@ -12,7 +12,7 @@ export async function getAuditLogs() {
     return redirect('/');
   }
   try {
-    const logs = await cachyBuilderClient.getAuditLogs(await headers());
+    const logs = await cachyBuilderClient.auditLogs.getAuditLogs(await headers());
     return logs.map(item => {
       const description = item.event_desc;
       const packages: ParsedAuditLogEntry[] = [];
@@ -51,7 +51,9 @@ export async function getAuditLogs() {
         description:
           packages.length > 1
             ? `Bulk Rebuild: ${packages.length} packages`
-            : packages.shift()!.description,
+            : packages.length === 1
+              ? packages.shift()!.description
+              : description,
         eventName: item.event_name,
         id: item.id,
         packages,

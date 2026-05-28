@@ -1,6 +1,6 @@
 import {SessionOptions} from 'iron-session';
 
-import CachyBuilderClient, {ServerToken} from '@/lib/CachyBuilderClient';
+import CachyBuilderClient, {type ServerToken} from '@/lib/api';
 
 export type SessionData = {
   createdAt: number;

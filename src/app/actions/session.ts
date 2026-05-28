@@ -4,7 +4,7 @@ import {getIronSession} from 'iron-session';
 import {cookies, headers} from 'next/headers';
 import {redirect} from 'next/navigation';
 
-import CachyBuilderClient from '@/lib/CachyBuilderClient';
+import CachyBuilderClient from '@/lib/api';
 import {defaultSession, SessionData, sessionOptions} from '@/lib/session';
 import {
   LoginRequest,
@@ -57,7 +57,7 @@ export async function getLoggedInUser(fullProfile = false) {
     return redirect('/');
   }
   try {
-    const user = await cachyBuilderClient.getLoggedInUserProfile(
+    const user = await cachyBuilderClient.users.getLoggedInUserProfile(
       await headers()
     );
     session.displayName = user.display_name ?? user.username;

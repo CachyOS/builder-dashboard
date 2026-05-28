@@ -16,7 +16,7 @@ import {
   SidebarRail,
   useSidebar,
 } from '@/components/ui/sidebar';
-import CachyBuilderClient from '@/lib/CachyBuilderClient';
+import CachyBuilderClient from '@/lib/api';
 import {UserData} from '@/lib/typings';
 
 const items = [

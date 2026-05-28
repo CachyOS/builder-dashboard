@@ -13,8 +13,8 @@ export async function getFullUserProfile(username: string) {
   }
   try {
     const [profile, scopes] = await Promise.all([
-      cachyBuilderClient.getUserProfile(username, await headers()),
-      cachyBuilderClient.getUserScopes(username, await headers()),
+      cachyBuilderClient.users.getUserProfile(username, await headers()),
+      cachyBuilderClient.users.getUserScopes(username, await headers()),
     ]);
     profile.scopes = scopes;
     return profile;
@@ -31,7 +31,7 @@ export async function getUser(username: string) {
     return redirect('/');
   }
   try {
-    const user = await cachyBuilderClient.getUserProfile(
+    const user = await cachyBuilderClient.users.getUserProfile(
       username,
       await headers()
     );
@@ -53,7 +53,7 @@ export async function updateProfile(profile: UserProfile, updateAll = false) {
       errors,
       profile: updatedProfile,
       validServers,
-    } = await cachyBuilderClient.updateProfile(
+    } = await cachyBuilderClient.users.updateProfile(
       profile,
       updateAll,
       true,
@@ -89,7 +89,7 @@ export async function updateScopes(
     return redirect('/');
   }
   try {
-    const {errors, validServers} = await cachyBuilderClient.updateUserScopes(
+    const {errors, validServers} = await cachyBuilderClient.users.updateUserScopes(
       data.username,
       data.scopes,
       updateAll,
