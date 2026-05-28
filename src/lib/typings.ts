@@ -233,9 +233,7 @@ export type ListPackagesQuery = z.infer<typeof ListPackagesQuerySchema>;
 
 export const ListPackageResponseSchema = z.strictObject({
   packages: PackageListSchema,
-  total_packages: z
-    .number('Total packages must be a positive integer')
-    .nonnegative(),
+  total_items: z.number('Total items must be a positive integer').nonnegative(),
   total_pages: z.number('Total pages must be a positive integer').nonnegative(),
 });
 
@@ -368,9 +366,7 @@ export type ListRepoActionsQuery = z.infer<typeof ListRepoActionsQuerySchema>;
 
 export const RepoActionsResponseSchema = z.strictObject({
   actions: RepoActionListSchema,
-  total_actions: z
-    .number('Total actions must be a positive integer')
-    .nonnegative(),
+  total_items: z.number('Total items must be a positive integer').nonnegative(),
   total_pages: z.number('Total pages must be a positive integer').nonnegative(),
 });
 

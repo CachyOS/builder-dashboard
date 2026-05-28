@@ -183,14 +183,14 @@ export default function RepoActionsPage() {
           columns={columns}
           data={data.actions}
           getSubRows={row => row.parsedPackages as ParsedRepoAction[]}
-          itemCount={data.total_actions}
+          itemCount={data.total_items}
           manualFiltering
           manualPagination
           onPageChange={pageIndex => setCurrentPage(pageIndex + 1)}
           onPageSizeChange={pageSize => {
             const currentEntryCutoff = Math.min(
               (currentPage - 1) * pageSize + 1,
-              data.total_actions
+              data.total_items
             );
             setCurrentPage(Math.floor(currentEntryCutoff / pageSize));
             setPageSize(pageSize);

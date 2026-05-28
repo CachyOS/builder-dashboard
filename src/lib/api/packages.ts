@@ -28,7 +28,7 @@ import {buildQuery, parseOrThrow, requireScopes} from './helpers';
 
 const EMPTY_PACKAGE_LIST: ListPackageResponse = {
   packages: [],
-  total_packages: 0,
+  total_items: 0,
   total_pages: 0,
 };
 

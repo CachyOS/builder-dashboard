@@ -9,7 +9,7 @@ import {buildQuery, parseOrThrow} from './helpers';
 
 const EMPTY_REPO_ACTIONS: RepoActionsResponse = {
   actions: [],
-  total_actions: 0,
+  total_items: 0,
   total_pages: 0,
 };
 

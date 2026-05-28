@@ -410,7 +410,7 @@ export default function PackageListPage() {
           setManual(false);
           setData({
             packages: response,
-            total_packages: response.length,
+            total_items: response.length,
             total_pages: 1,
           });
         }
@@ -433,14 +433,14 @@ export default function PackageListPage() {
           getRowId={row =>
             `${row.pkgbase}-${row.pkgname}-${row.repository}-${row.march}`
           }
-          itemCount={manual ? data.total_packages : undefined}
+          itemCount={manual ? data.total_items : undefined}
           manualFiltering={manual}
           manualPagination={manual}
           onPageChange={pageIndex => setCurrentPage(pageIndex + 1)}
           onPageSizeChange={pageSize => {
             const currentEntryCutoff = Math.min(
               (currentPage - 1) * pageSize + 1,
-              data.total_packages
+              data.total_items
             );
             setCurrentPage(Math.floor(currentEntryCutoff / pageSize));
             setPageSize(pageSize);

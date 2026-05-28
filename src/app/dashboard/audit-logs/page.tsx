@@ -34,7 +34,7 @@ export default function AuditLogsPage() {
       .then(response => {
         if ('error' in response && response.error) {
           setError(response.error);
-          toast.error(`Failed to fetch repo actions: ${response.error}`, {
+          toast.error(`Failed to fetch audit logs: ${response.error}`, {
             closeButton: true,
             duration: Infinity,
           });
@@ -45,8 +45,8 @@ export default function AuditLogsPage() {
         }
       })
       .catch(() => {
-        setError('Failed to fetch repo actions, please try again later.');
-        toast.error('Failed to fetch repo actions, please try again later.', {
+        setError('Failed to fetch audit logs, please try again later.');
+        toast.error('Failed to fetch audit logs, please try again later.', {
           closeButton: true,
           duration: Infinity,
         });
