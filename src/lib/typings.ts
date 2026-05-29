@@ -87,6 +87,7 @@ export enum ResponseType {
 
 export enum UserScope {
   ADMIN = 'admin',
+  PACKAGER = 'packager',
   READ = 'read',
   WRITE = 'write',
 }
