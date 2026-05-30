@@ -44,7 +44,9 @@ export async function getPackageStats(
           .slice(0, 7),
       }));
     } else if (type === PackageStatsType.CATEGORY) {
-      return cachyBuilderClient.stats.getPackageStatsByCategory(await headers());
+      return cachyBuilderClient.stats.getPackageStatsByCategory(
+        await headers()
+      );
     } else {
       return cachyBuilderClient.stats.getBuildTimePackageStats(await headers());
     }

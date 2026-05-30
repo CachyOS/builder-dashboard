@@ -17,8 +17,11 @@ const buttonVariants = cva(
         icon: 'size-9',
         lg: 'h-10 rounded-md px-6 has-[>svg]:px-4',
         sm: 'h-8 rounded-md gap-1.5 px-3 has-[>svg]:px-2.5',
+        xs: 'h-7 rounded-md gap-1 px-2 text-xs has-[>svg]:px-2',
       },
       variant: {
+        brand:
+          'bg-brand text-brand-foreground shadow-xs hover:bg-brand/90 focus-visible:ring-brand/30',
         default:
           'bg-primary text-primary-foreground shadow-xs hover:bg-primary/90',
         destructive:
