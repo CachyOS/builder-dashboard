@@ -9,7 +9,9 @@ import {
 
 import {AuditLogsClient} from './audit-logs';
 import {BaseClient, ServerToken} from './base';
+import {CustomClient} from './custom';
 import {multiServerCall, parseOrThrow} from './helpers';
+import {MaintainersClient} from './maintainers';
 import {PackagesClient} from './packages';
 import {RepoActionsClient} from './repo-actions';
 import {StatsClient} from './stats';
@@ -22,6 +24,8 @@ export default class CachyBuilderClient {
 
   public readonly auditLogs: AuditLogsClient;
 
+  public readonly custom: CustomClient;
+  public readonly maintainers: MaintainersClient;
   public readonly packages: PackagesClient;
   public readonly repoActions: RepoActionsClient;
   public readonly stats: StatsClient;
@@ -45,6 +49,8 @@ export default class CachyBuilderClient {
     this.packages = new PackagesClient(this.base);
     this.stats = new StatsClient(this.base);
     this.users = new UsersClient(this.base);
+    this.custom = new CustomClient(this.base);
+    this.maintainers = new MaintainersClient(this.base);
     this.auditLogs = new AuditLogsClient(this.base);
     this.repoActions = new RepoActionsClient(this.base);
   }

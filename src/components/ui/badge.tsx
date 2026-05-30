@@ -12,14 +12,20 @@ const badgeVariants = cva(
     },
     variants: {
       variant: {
+        building: 'border-transparent bg-brand/15 text-brand',
+        danger: 'border-transparent bg-status-danger/15 text-status-danger',
         default:
           'border-transparent bg-primary text-primary-foreground [a&]:hover:bg-primary/90',
         destructive:
           'border-transparent bg-destructive text-white [a&]:hover:bg-destructive/90 focus-visible:ring-destructive/20 dark:focus-visible:ring-destructive/40 dark:bg-destructive/60',
+        info: 'border-transparent bg-status-info/15 text-status-info',
+        muted: 'border-transparent bg-status-muted/15 text-muted-foreground',
         outline:
           'text-foreground [a&]:hover:bg-accent [a&]:hover:text-accent-foreground',
         secondary:
           'border-transparent bg-secondary text-secondary-foreground [a&]:hover:bg-secondary/90',
+        success: 'border-transparent bg-status-success/15 text-status-success',
+        warning: 'border-transparent bg-status-warning/15 text-status-warning',
       },
     },
   }
