@@ -1,6 +1,18 @@
 'use client';
 
-import {Activity, Logs, Package, PieChart, Repeat2} from 'lucide-react';
+import {
+  Activity,
+  Boxes,
+  ChevronRight,
+  FileCheck,
+  GitBranch,
+  Logs,
+  Package,
+  PieChart,
+  Repeat2,
+  Shield,
+} from 'lucide-react';
+import Link from 'next/link';
 import * as React from 'react';
 import {toast} from 'sonner';
 
@@ -9,15 +21,25 @@ import {NavMain} from '@/components/nav-main';
 import {NavUser} from '@/components/nav-user';
 import {ServerSwitcher} from '@/components/server-switcher';
 import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from '@/components/ui/collapsible';
+import {
   Sidebar,
   SidebarContent,
   SidebarFooter,
+  SidebarGroup,
+  SidebarGroupLabel,
   SidebarHeader,
+  SidebarMenu,
+  SidebarMenuSubButton,
+  SidebarMenuSubItem,
   SidebarRail,
   useSidebar,
 } from '@/components/ui/sidebar';
 import CachyBuilderClient from '@/lib/api';
-import {UserData} from '@/lib/typings';
+import {UserData, UserScope} from '@/lib/typings';
 
 const items = [
   {
@@ -46,6 +68,14 @@ const items = [
     url: '/dashboard/statistics',
   },
 ];
+
+const customSubItems = [
+  {icon: GitBranch, name: 'Repos', tab: 'repos'},
+  {icon: Package, name: 'Packages', tab: 'packages'},
+  {icon: FileCheck, name: 'Submissions', tab: 'submissions'},
+  {icon: Shield, name: 'Maintainers', tab: 'maintainers'},
+] as const;
+
 export function AppSidebar({...props}: React.ComponentProps<typeof Sidebar>) {
   const {activeServer, refresh, setScopes} = useSidebar();
   const [servers, setServers] = React.useState(
@@ -76,6 +106,9 @@ export function AppSidebar({...props}: React.ComponentProps<typeof Sidebar>) {
       }
     });
   }, [activeServer, refresh, setScopes]);
+
+  const isAdmin = user.scopes.includes(UserScope.ADMIN);
+
   return (
     <Sidebar collapsible="icon" {...props}>
       <SidebarHeader>
@@ -83,6 +116,36 @@ export function AppSidebar({...props}: React.ComponentProps<typeof Sidebar>) {
       </SidebarHeader>
       <SidebarContent>
         <NavMain items={items} />
+        <SidebarGroup>
+          <Collapsible className="group/collapsible" defaultOpen>
+            <SidebarGroupLabel
+              asChild
+              className="text-sm font-semibold text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
+            >
+              <CollapsibleTrigger>
+                <Boxes />
+                <span>Custom</span>
+                <ChevronRight className="ml-auto transition-transform duration-200 group-data-[state=open]/collapsible:rotate-90" />
+              </CollapsibleTrigger>
+            </SidebarGroupLabel>
+            <CollapsibleContent>
+              <SidebarMenu>
+                {customSubItems
+                  .filter(sub => sub.tab !== 'maintainers' || isAdmin)
+                  .map(sub => (
+                    <SidebarMenuSubItem key={sub.tab}>
+                      <SidebarMenuSubButton asChild>
+                        <Link href={`/dashboard/custom/${sub.tab}`}>
+                          <sub.icon />
+                          <span>{sub.name}</span>
+                        </Link>
+                      </SidebarMenuSubButton>
+                    </SidebarMenuSubItem>
+                  ))}
+              </SidebarMenu>
+            </CollapsibleContent>
+          </Collapsible>
+        </SidebarGroup>
       </SidebarContent>
       <SidebarFooter>
         <NavUser user={user} />
