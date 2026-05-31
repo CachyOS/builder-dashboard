@@ -10,7 +10,7 @@ import {
 import {AuditLogsClient} from './audit-logs';
 import {BaseClient, ServerToken} from './base';
 import {CustomClient} from './custom';
-import {multiServerCall, parseOrThrow} from './helpers';
+import {multiServerCall, MultiServerCallResult, parseOrThrow} from './helpers';
 import {MaintainersClient} from './maintainers';
 import {PackagesClient} from './packages';
 import {RepoActionsClient} from './repo-actions';
@@ -70,7 +70,6 @@ export default class CachyBuilderClient {
       allowInvalid,
       base: this.base,
       clientHeaders,
-      fallback: {token: ''},
       label: 'User Login',
       request: {
         endpoint: 'login',
@@ -86,15 +85,15 @@ export default class CachyBuilderClient {
     this.base.tokens = results.map((r, i) => ({
       description: CachyBuilderClient.servers[i].description,
       name: CachyBuilderClient.servers[i].name,
-      scopes: r.success ? [UserScope.READ] : [],
-      token: r.success ? r.data.token : '',
+      scopes: r.ok ? [UserScope.READ] : [],
+      token: r.ok ? r.data.token : '',
       url: CachyBuilderClient.servers[i].url,
     }));
 
     this.base.token = this.base.tokens[this.base.serverIndex].token;
 
     if (!this.base.token) {
-      this.base.serverIndex = results.findIndex(r => r.success);
+      this.base.serverIndex = results.findIndex(r => r.ok);
       if (this.base.serverIndex === -1) {
         throw new Error('No valid server found with a valid token.');
       }
@@ -104,48 +103,61 @@ export default class CachyBuilderClient {
 
     return {
       errors,
-      validServers: CachyBuilderClient.servers.filter(
-        (_, i) => results[i].success
-      ),
+      validServers: CachyBuilderClient.servers.filter((_, i) => results[i].ok),
     };
   }
 
   public async syncLoggedInUserScopes(
     allowInvalid = false,
-    clientHeaders = new Headers()
+    clientHeaders = new Headers(),
+    serverName?: string
   ) {
-    const validServers = this.base.tokens.filter(s => !!s.token);
+    const validServers = this.base.tokens.filter(
+      s => !!s.token && (serverName === undefined || s.name === serverName)
+    );
 
     if (validServers.length === 0) {
       throw new Error('No valid servers to get profile scopes on');
     }
 
+    const isFailure = (r: MultiServerCallResult<UserScope[]>) =>
+      !r.ok || r.data.length === 0;
+
     const {errors, results} = await multiServerCall<UserScope[]>({
       allowInvalid,
       base: this.base,
       clientHeaders,
-      fallback: [],
-      isFailure: r => !r.success || r.data.length === 0,
+      isFailure,
       label: 'Get User Scopes',
       request: {endpoint: 'user-profile/scopes'},
+      retryOnAuth: true,
       schema: userScopeArray,
       targets: validServers,
     });
 
-    this.base.tokens = this.base.tokens.map(s => {
-      const idx = validServers.findIndex(vs => vs.name === s.name);
-      if (idx !== -1 && results[idx].success) {
-        return {
-          ...s,
-          scopes: results[idx].data,
-        };
-      }
-      return s;
+    const outcomes = validServers.map((server, i) => ({
+      failed: isFailure(results[i]),
+      result: results[i],
+      server,
+    }));
+
+    const unreachable = outcomes.filter(o => o.failed).map(o => o.server.name);
+
+    const scopesByName = new Map(
+      outcomes.flatMap(({failed, result, server}) =>
+        !failed && result.ok ? [[server.name, result.data] as const] : []
+      )
+    );
+
+    this.base.tokens = this.base.tokens.map(token => {
+      const scopes = scopesByName.get(token.name);
+      return scopes ? {...token, scopes} : token;
     });
 
     return {
       errors,
       tokens: this.base.tokens,
+      unreachable,
     };
   }
 

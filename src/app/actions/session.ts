@@ -5,6 +5,7 @@ import {cookies, headers} from 'next/headers';
 import {redirect} from 'next/navigation';
 
 import CachyBuilderClient from '@/lib/api';
+import {isAccessibleToken} from '@/lib/api/base';
 import {defaultSession, SessionData, sessionOptions} from '@/lib/session';
 import {
   LoginRequest,
@@ -36,7 +37,7 @@ export async function getAccessibleServers() {
     return redirect('/');
   }
   return session.tokens.map((token, index) => ({
-    accessible: token.token !== '' && token.scopes.length > 0,
+    accessible: isAccessibleToken(token),
     active: index === session.serverIndex,
     description: token.description,
     name: token.name,
@@ -168,23 +169,49 @@ export async function logout() {
   return redirect('/');
 }
 
+export async function retryServerAccess(serverName: string) {
+  const {cachyBuilderClient, session} = await getSession();
+  if (!session.isLoggedIn) {
+    return redirect('/');
+  }
+  try {
+    const {tokens, unreachable} =
+      await cachyBuilderClient.syncLoggedInUserScopes(
+        true,
+        await headers(),
+        serverName
+      );
+    if (unreachable.includes(serverName)) {
+      return {
+        error: `Server "${serverName}" is still unreachable. The builder API may be down or your token has expired.`,
+      };
+    }
+    session.tokens = tokens;
+    await session.save();
+    return {msg: `Restored access to "${serverName}".`};
+  } catch (error) {
+    return {
+      error: `Failed to retry access for "${serverName}": ${error instanceof Error ? error.message : 'Unknown error'}`,
+    };
+  }
+}
+
 export async function syncLoggedInUserScopes() {
   const {cachyBuilderClient, session} = await getSession();
   if (!session.isLoggedIn) {
     return redirect('/');
   }
   try {
-    const {errors, tokens} = await cachyBuilderClient.syncLoggedInUserScopes(
-      true,
-      await headers()
-    );
+    const {tokens, unreachable} =
+      await cachyBuilderClient.syncLoggedInUserScopes(true, await headers());
     session.tokens = tokens;
     await session.save();
     return {
-      success: tokens.length > 0,
+      success: tokens.some(isAccessibleToken),
+      unreachable,
       warning:
-        errors.length > 0
-          ? `Failed to sync scopes on some servers, these servers will be disabled for current session:\n${errors}`
+        unreachable.length > 0
+          ? `Could not validate access on: ${unreachable.join(', ')}. You can retry per server from the sidebar switcher.`
           : undefined,
     };
   } catch (error) {
