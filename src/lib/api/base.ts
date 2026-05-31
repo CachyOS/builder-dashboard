@@ -32,6 +32,10 @@ export class HttpError extends Error {
   }
 }
 
+export function isAccessibleToken(token: ServerToken): boolean {
+  return token.token !== '' && token.scopes.length > 0;
+}
+
 export const SERVERS = [
   {
     default: true,
