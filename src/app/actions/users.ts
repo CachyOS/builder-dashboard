@@ -89,12 +89,13 @@ export async function updateScopes(
     return redirect('/');
   }
   try {
-    const {errors, validServers} = await cachyBuilderClient.users.updateUserScopes(
-      data.username,
-      data.scopes,
-      updateAll,
-      await headers()
-    );
+    const {errors, validServers} =
+      await cachyBuilderClient.users.updateUserScopes(
+        data.username,
+        data.scopes,
+        updateAll,
+        await headers()
+      );
     return {
       success: validServers.length > 0,
       warning:

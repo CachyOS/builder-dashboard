@@ -75,7 +75,6 @@ export class UsersClient {
       allowInvalid,
       base: this.base,
       clientHeaders,
-      fallback: {},
       label: 'Update User Profile',
       request: {
         endpoint: 'user-profile',
@@ -85,10 +84,17 @@ export class UsersClient {
       targets: updateServers,
     });
 
+    const firstOk = results.find(r => r.ok);
+    if (!firstOk?.ok) {
+      throw new Error(
+        `Failed to update user profile on any server:\n${errors}`
+      );
+    }
+
     return {
       errors,
-      profile: results.find(r => r.success)!.data,
-      validServers: updateServers.filter((_, i) => results[i].success),
+      profile: firstOk.data,
+      validServers: updateServers.filter((_, i) => results[i].ok),
     };
   }
 
@@ -121,7 +127,6 @@ export class UsersClient {
       allowInvalid: false,
       base: this.base,
       clientHeaders,
-      fallback: [],
       label: 'Update User Scopes',
       request: {
         endpoint: `profile/${username}/scopes`,
@@ -133,7 +138,7 @@ export class UsersClient {
 
     return {
       errors,
-      validServers: updateServers.filter((_, i) => results[i].success),
+      validServers: updateServers.filter((_, i) => results[i].ok),
     };
   }
 }

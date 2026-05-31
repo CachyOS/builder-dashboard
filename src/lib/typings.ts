@@ -33,7 +33,15 @@ export const packageRepo = z.enum(
 
 export enum AuditLogEventName {
   BULK_QPKG_REBUILD = 'BULK_QPKG_REBUILD',
+  MAINTAINER_GRANTED = 'MAINTAINER_GRANTED',
+  MAINTAINER_REVOKED = 'MAINTAINER_REVOKED',
+  PKG_APPROVAL = 'PKG_APPROVAL',
+  PKG_BUILD_QUEUED = 'PKG_BUILD_QUEUED',
+  PKG_CANCELLED = 'PKG_CANCELLED',
+  PKG_REJECTION = 'PKG_REJECTION',
+  PKG_SUBMISSION = 'PKG_SUBMISSION',
   QPKG_REBUILD = 'QPKG_REBUILD',
+  UNKNOWN = 'UNKNOWN',
 }
 
 export const auditLogEventNameValues = Object.values(AuditLogEventName);
@@ -449,6 +457,143 @@ export const UpdateUserScopesRequestSchema = z.strictObject({
   scopes: userScopeArray,
 });
 
+export interface ActionError {
+  error: string;
+}
+
 export type UpdateUserScopesRequest = z.infer<
   typeof UpdateUserScopesRequestSchema
+>;
+
+export function isActionError(value: unknown): value is ActionError {
+  return (
+    typeof value === 'object' &&
+    value !== null &&
+    'error' in value &&
+    typeof (value as {error: unknown}).error === 'string'
+  );
+}
+
+export const CustomRepoSchema = z.object({
+  id: z.string(),
+  march: z.string(),
+  repo_name: z.string(),
+});
+export type CustomRepo = z.infer<typeof CustomRepoSchema>;
+export const CustomRepoResponseSchema = z.object({
+  repos: z.array(CustomRepoSchema),
+  total_items: z.number(),
+  total_pages: z.number(),
+});
+export type CustomRepoResponse = z.infer<typeof CustomRepoResponseSchema>;
+
+export const CustomPackageSchema = z.object({
+  march: z.string(),
+  pkgbase: z.string(),
+  pkgname: z.string(),
+  repository: z.string(),
+  status: z.string(),
+  updated: z.number(),
+  version: z.string(),
+});
+export type CustomPackage = z.infer<typeof CustomPackageSchema>;
+export const CustomPackageResponseSchema = z.object({
+  custom_packages: z.array(CustomPackageSchema),
+  total_items: z.number(),
+  total_pages: z.number(),
+});
+export enum SubmissionStatus {
+  APPROVED = 'APPROVED',
+  BUILD_DONE = 'BUILD_DONE',
+  BUILD_FAILED = 'BUILD_FAILED',
+  BUILD_QUEUED = 'BUILD_QUEUED',
+  CANCELLED = 'CANCELLED',
+  PENDING_REVIEW = 'PENDING_REVIEW',
+  REJECTED = 'REJECTED',
+}
+
+export type CustomPackageResponse = z.infer<typeof CustomPackageResponseSchema>;
+
+export const PackageSubmissionSchema = z.object({
+  created: z.number(),
+  git_repo_url: z.string(),
+  id: z.string(),
+  makepkg_conf: z.string().optional(),
+  march: z.string(),
+  pkg_path_in_repo: z.string(),
+  pkgbase: z.string(),
+  repo_name: z.string(),
+  review_note: z.string().optional(),
+  reviewer: z.string().optional(),
+  submission_status: z.string(),
+  submitter: z.string(),
+  updated: z.number(),
+});
+export type PackageSubmission = z.infer<typeof PackageSubmissionSchema>;
+export const PackageSubmissionResponseSchema = z.object({
+  submissions: z.array(PackageSubmissionSchema),
+  total_items: z.number(),
+  total_pages: z.number(),
+});
+export type PackageSubmissionResponse = z.infer<
+  typeof PackageSubmissionResponseSchema
+>;
+
+export const SubmitPackageRequestSchema = z.strictObject({
+  git_repo_url: z.string().min(1),
+  pkg_path_in_repo: z.string().default(''),
+  pkgbase: z.string().min(1),
+  repo_id: z.string().min(1),
+});
+export type SubmitPackageRequest = z.infer<typeof SubmitPackageRequestSchema>;
+
+export const SubmissionActionResponseSchema = z.object({
+  status: z.string(),
+  submission_id: z.string(),
+});
+export type SubmissionActionResponse = z.infer<
+  typeof SubmissionActionResponseSchema
+>;
+
+export const MaintainerPolicySchema = z.object({
+  auto_queue: z.boolean(),
+  granted_at: z.string(),
+  granted_by: z.number(),
+  granter_username: z.string(),
+  id: z.string(),
+  march: z.string(),
+  pkgbase: z.string(),
+  repo_id: z.string(),
+  repo_name: z.string(),
+  username: z.string(),
+});
+export type MaintainerPolicy = z.infer<typeof MaintainerPolicySchema>;
+
+export const MaintainerListResponseSchema = z.object({
+  maintainers: z.array(MaintainerPolicySchema),
+  total_items: z.number(),
+  total_pages: z.number(),
+});
+export type MaintainerListResponse = z.infer<
+  typeof MaintainerListResponseSchema
+>;
+
+export const AddMaintainerRequestSchema = z.strictObject({
+  auto_queue: z.boolean().default(false),
+  pkgbase: z.string().min(1),
+  repo_id: z.string().min(1),
+  username: z.string().min(1),
+});
+export type AddMaintainerRequest = z.infer<typeof AddMaintainerRequestSchema>;
+
+export const AddMaintainerResponseSchema = z.object({
+  id: z.string(),
+});
+export type AddMaintainerResponse = z.infer<typeof AddMaintainerResponseSchema>;
+
+export const RevokeMaintainerResponseSchema = z.object({
+  revoked: z.boolean(),
+});
+export type RevokeMaintainerResponse = z.infer<
+  typeof RevokeMaintainerResponseSchema
 >;
