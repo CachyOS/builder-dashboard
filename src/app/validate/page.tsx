@@ -11,47 +11,32 @@ export default function Page() {
   const [status, setStatus] = useState(
     'CachyOS Builder Dashboard is loading...'
   );
-  const [doRedirect, setDoRedirect] = useState(false);
   useEffect(() => {
+    let redirectTimeout: null | ReturnType<typeof setTimeout> = null;
     setStatus('Configuring dashboard with your access scopes...');
-    const timeout = setTimeout(() => {
-      syncLoggedInUserScopes()
-        .then(data => {
-          if (data.error) {
-            return setStatus(data.error);
-          } else if (data.success) {
-            if (Array.isArray(data.warning) && data.warning.length) {
-              setStatus(
-                `Some errors occurred while syncing scopes:\n${data.warning}`
-              );
-              setDoRedirect(true);
-            } else {
-              setStatus('Scopes synced successfully. Redirecting...');
-              setDoRedirect(true);
-            }
-          } else {
-            setStatus(
-              'Unable to configure scopes for your account. Please contact site administrator.'
-            );
-          }
-        })
-        .catch(() => {});
-    }, 7000);
+    syncLoggedInUserScopes()
+      .then(data => {
+        if (data.error) {
+          return setStatus(data.error);
+        }
+        if (data.success) {
+          setStatus(
+            data.warning ?? 'Scopes synced successfully. Redirecting...'
+          );
+          redirectTimeout = setTimeout(() => {
+            router.push('/dashboard/package-list');
+          }, 1200);
+        } else {
+          setStatus(
+            'Unable to configure scopes for your account. Please contact site administrator.'
+          );
+        }
+      })
+      .catch(() => {});
     return () => {
-      clearTimeout(timeout);
+      if (redirectTimeout) clearTimeout(redirectTimeout);
     };
   }, [router]);
-  useEffect(() => {
-    if (doRedirect) {
-      const redirectTimeout = setTimeout(() => {
-        setDoRedirect(true);
-        router.push('/dashboard/package-list');
-      }, 1200);
-      return () => {
-        clearTimeout(redirectTimeout);
-      };
-    }
-  }, [router, doRedirect]);
   return (
     <div className="flex min-h-svh w-full items-center justify-center p-6 md:p-10">
       <div className="w-full max-w-md">
