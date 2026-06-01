@@ -229,6 +229,7 @@ export default function PackagesListPage() {
 
       <AddMaintainerDialog
         currentUser={currentUser}
+        key={selected ? `${selected.pkgbase}|${selected.repository}` : 'add'}
         onOpenChange={open =>
           setDialog(prev => ({
             open,
@@ -238,6 +239,16 @@ export default function PackagesListPage() {
         onSuccess={reload}
         open={dialogOpen}
         packages={selected ? [selected] : packages}
+        prefill={
+          selected && {
+            pkgbase: selected.pkgbase,
+            repoId: repos.find(
+              r =>
+                r.repo_name === selected.repository &&
+                r.march === selected.march
+            )?.id,
+          }
+        }
         repos={repos}
       />
     </div>

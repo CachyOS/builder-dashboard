@@ -37,6 +37,7 @@ interface AddMaintainerDialogProps {
   onSuccess: () => void;
   open: boolean;
   packages: CustomPackage[];
+  prefill?: {pkgbase?: string; repoId?: string};
   repos: CustomRepo[];
 }
 
@@ -46,12 +47,13 @@ export function AddMaintainerDialog({
   onSuccess,
   open,
   packages,
+  prefill,
   repos,
 }: Readonly<AddMaintainerDialogProps>) {
   const [form, setForm] = useState({
     autoQueue: false,
-    pkgbase: '',
-    repoId: '',
+    pkgbase: prefill?.pkgbase ?? '',
+    repoId: prefill?.repoId ?? '',
     username: '',
   });
   const [ui, setUi] = useState({submitting: false, suggestionsOpen: false});
