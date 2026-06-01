@@ -12,6 +12,7 @@ type PackageBadgeVariant =
 
 export const packageStatusTone: Record<PackageStatus, StatusTone> = {
   [PackageStatus.BUILDING]: 'building',
+  [PackageStatus.CANCELLED]: 'muted',
   [PackageStatus.DONE]: 'success',
   [PackageStatus.FAILED]: 'danger',
   [PackageStatus.LATEST]: 'success',
@@ -23,6 +24,7 @@ export const packageStatusTone: Record<PackageStatus, StatusTone> = {
 export const packageStatusVariant: Record<PackageStatus, PackageBadgeVariant> =
   {
     [PackageStatus.BUILDING]: 'building',
+    [PackageStatus.CANCELLED]: 'muted',
     [PackageStatus.DONE]: 'success',
     [PackageStatus.FAILED]: 'danger',
     [PackageStatus.LATEST]: 'success',
@@ -33,6 +35,7 @@ export const packageStatusVariant: Record<PackageStatus, PackageBadgeVariant> =
 
 const packageStatusLabels: Record<PackageStatus, string> = {
   [PackageStatus.BUILDING]: 'Building',
+  [PackageStatus.CANCELLED]: 'Cancelled',
   [PackageStatus.DONE]: 'Done',
   [PackageStatus.FAILED]: 'Failed',
   [PackageStatus.LATEST]: 'Latest',

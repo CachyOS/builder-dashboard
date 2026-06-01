@@ -59,6 +59,7 @@ export enum PackageStatsType {
 
 export enum PackageStatus {
   BUILDING = 'BUILDING',
+  CANCELLED = 'CANCELLED',
   DONE = 'DONE',
   FAILED = 'FAILED',
   LATEST = 'LATEST',
@@ -567,9 +568,17 @@ export type SubmissionActionResponse = z.infer<
   typeof SubmissionActionResponseSchema
 >;
 
+export const CancelSubmissionResponseSchema =
+  SubmissionActionResponseSchema.extend({
+    old_status: z.string(),
+  });
+export type CancelSubmissionResponse = z.infer<
+  typeof CancelSubmissionResponseSchema
+>;
+
 export const MaintainerPolicySchema = z.object({
   auto_queue: z.boolean(),
-  granted_at: z.string(),
+  granted_at: z.number(),
   granted_by: z.number(),
   granter_username: z.string(),
   id: z.string(),

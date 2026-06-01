@@ -1,4 +1,6 @@
 import {
+  CancelSubmissionResponse,
+  CancelSubmissionResponseSchema,
   CustomPackageResponse,
   CustomPackageResponseSchema,
   CustomRepoResponse,
@@ -43,14 +45,14 @@ export class CustomClient {
 
   public async cancelSubmission(id: string, clientHeaders = new Headers()) {
     const response = await this.base
-      ._fetcher<SubmissionActionResponse>({
+      ._fetcher<CancelSubmissionResponse>({
         clientHeaders,
         endpoint: `package-submissions/${id}/cancel`,
         init: {method: 'PUT'},
       })
       .catch(() => ({}));
     return parseOrThrow(
-      SubmissionActionResponseSchema,
+      CancelSubmissionResponseSchema,
       response,
       'cancel submission response'
     );

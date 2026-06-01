@@ -170,6 +170,7 @@ function MonthlyChart() {
           if (!chartDataMap.has(month)) {
             chartDataMap.set(month, {
               [PackageStatus.BUILDING]: 0,
+              [PackageStatus.CANCELLED]: 0,
               [PackageStatus.DONE]: 0,
               [PackageStatus.FAILED]: 0,
               [PackageStatus.LATEST]: 0,
