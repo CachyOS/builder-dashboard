@@ -9,7 +9,6 @@ import {
   getCustomRepos,
   getMaintainers,
 } from '@/app/actions/custom';
-import {getLoggedInUser} from '@/app/actions/session';
 import {AddMaintainerDialog} from '@/components/custom/add-maintainer-dialog';
 import Loader from '@/components/loader';
 import {Badge} from '@/components/ui/badge';
@@ -20,11 +19,13 @@ import {Input} from '@/components/ui/input';
 import {MetadataRow} from '@/components/ui/metadata-row';
 import {PageHeader} from '@/components/ui/page-header';
 import {useSidebar} from '@/components/ui/sidebar';
+import {useInfiniteList} from '@/lib/hooks/use-infinite-list';
 import {
   type CustomPackage,
   type CustomRepo,
   isActionError,
   type MaintainerPolicy,
+  unwrapOr,
   UserScope,
 } from '@/lib/typings';
 import {checkScopes} from '@/lib/utils';
@@ -37,37 +38,44 @@ interface MaintainerGroup {
 }
 
 export default function MaintainersListPage() {
-  const {scopes} = useSidebar();
+  const {scopes, username: currentUser} = useSidebar();
   const isAdmin = useMemo(
     () => checkScopes(scopes, [UserScope.ADMIN]),
     [scopes]
   );
 
-  const [policies, setPolicies] = useState<MaintainerPolicy[]>([]);
   const [repos, setRepos] = useState<CustomRepo[]>([]);
   const [packages, setPackages] = useState<CustomPackage[]>([]);
-  const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
   const [addOpen, setAddOpen] = useState(false);
-  const [currentUser, setCurrentUser] = useState('');
 
-  const refresh = useCallback(() => {
-    setLoading(true);
-    Promise.all([getMaintainers(), getCustomRepos(), getCustomPackages()])
-      .then(([m, r, p]) => {
-        if (!isActionError(m) && 'maintainers' in m) setPolicies(m.maintainers);
-        if (!('error' in r)) setRepos(r.repos);
-        if (!('error' in p)) setPackages(p.custom_packages);
-      })
-      .finally(() => setLoading(false));
+  const fetchPage = useCallback(async (page: number, size: number) => {
+    const r = await getMaintainers(page, size);
+    if (isActionError(r)) return r;
+    return {items: r.maintainers, totalPages: r.total_pages};
   }, []);
 
+  const {
+    hasMore,
+    items: policies,
+    loading,
+    reload,
+    sentinelRef,
+  } = useInfiniteList<MaintainerPolicy>(fetchPage);
+
   useEffect(() => {
-    refresh();
-    getLoggedInUser(false).then(u => {
-      if (!('error' in u)) setCurrentUser(u.username);
+    if (!isAdmin) return;
+    Promise.all([getCustomRepos(), getCustomPackages()]).then(([r, p]) => {
+      setRepos(unwrapOr(r, {repos: [], total_items: 0, total_pages: 0}).repos);
+      setPackages(
+        unwrapOr(p, {
+          custom_packages: [],
+          total_items: 0,
+          total_pages: 0,
+        }).custom_packages
+      );
     });
-  }, [refresh]);
+  }, [isAdmin]);
 
   const groups = useMemo(() => groupByUsername(policies), [policies]);
 
@@ -86,6 +94,8 @@ export default function MaintainersListPage() {
       />
     );
   }
+
+  const initialLoading = loading && policies.length === 0;
 
   return (
     <div className="flex flex-col gap-4">
@@ -112,7 +122,7 @@ export default function MaintainersListPage() {
         </div>
       </FilterToolbar>
 
-      {loading ? (
+      {initialLoading ? (
         <Loader animate text="Loading maintainers…" />
       ) : filtered.length === 0 ? (
         <EmptyState
@@ -158,10 +168,19 @@ export default function MaintainersListPage() {
         </ul>
       )}
 
+      {hasMore && (
+        <div
+          className="py-2 text-center text-xs text-muted-foreground"
+          ref={sentinelRef}
+        >
+          {loading ? 'Loading more…' : ''}
+        </div>
+      )}
+
       <AddMaintainerDialog
         currentUser={currentUser}
         onOpenChange={setAddOpen}
-        onSuccess={refresh}
+        onSuccess={reload}
         open={addOpen}
         packages={packages}
         repos={repos}

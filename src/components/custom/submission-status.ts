@@ -2,7 +2,7 @@ import type {StatusTone} from '@/components/ui/status-dot';
 
 import {SubmissionStatus} from '@/lib/typings';
 
-export const submissionStatusTone: Record<string, StatusTone> = {
+export const submissionStatusTone: Record<SubmissionStatus, StatusTone> = {
   [SubmissionStatus.APPROVED]: 'info',
   [SubmissionStatus.BUILD_DONE]: 'success',
   [SubmissionStatus.BUILD_FAILED]: 'danger',
@@ -12,23 +12,29 @@ export const submissionStatusTone: Record<string, StatusTone> = {
   [SubmissionStatus.REJECTED]: 'danger',
 };
 
-export const submissionStatusPulse: Record<string, boolean> = {
+const submissionStatusPulse: Partial<Record<SubmissionStatus, true>> = {
   [SubmissionStatus.BUILD_QUEUED]: true,
   [SubmissionStatus.PENDING_REVIEW]: true,
 };
 
-export function labelFor(status: string): string {
-  return status
-    .replace(/_/g, ' ')
-    .toLowerCase()
-    .replace(/^./, c => c.toUpperCase())
-    .replace(/build /, 'Build ');
+const submissionStatusLabels: Record<SubmissionStatus, string> = {
+  [SubmissionStatus.APPROVED]: 'Approved',
+  [SubmissionStatus.BUILD_DONE]: 'Build done',
+  [SubmissionStatus.BUILD_FAILED]: 'Build failed',
+  [SubmissionStatus.BUILD_QUEUED]: 'Build queued',
+  [SubmissionStatus.CANCELLED]: 'Cancelled',
+  [SubmissionStatus.PENDING_REVIEW]: 'Pending review',
+  [SubmissionStatus.REJECTED]: 'Rejected',
+};
+
+export function labelFor(status: string | SubmissionStatus): string {
+  return submissionStatusLabels[status as SubmissionStatus] ?? status;
 }
 
-export function pulseFor(status: string): boolean {
-  return submissionStatusPulse[status] ?? false;
+export function pulseFor(status: string | SubmissionStatus): boolean {
+  return submissionStatusPulse[status as SubmissionStatus] ?? false;
 }
 
-export function toneFor(status: string): StatusTone {
-  return submissionStatusTone[status] ?? 'muted';
+export function toneFor(status: string | SubmissionStatus): StatusTone {
+  return submissionStatusTone[status as SubmissionStatus] ?? 'muted';
 }

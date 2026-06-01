@@ -474,6 +474,10 @@ export function isActionError(value: unknown): value is ActionError {
   );
 }
 
+export function unwrapOr<T>(result: ActionError | T, fallback: T): T {
+  return isActionError(result) ? fallback : result;
+}
+
 export const CustomRepoSchema = z.object({
   id: z.string(),
   march: z.string(),
@@ -482,23 +486,6 @@ export const CustomRepoSchema = z.object({
 export type CustomRepo = z.infer<typeof CustomRepoSchema>;
 export const CustomRepoResponseSchema = z.object({
   repos: z.array(CustomRepoSchema),
-  total_items: z.number(),
-  total_pages: z.number(),
-});
-export type CustomRepoResponse = z.infer<typeof CustomRepoResponseSchema>;
-
-export const CustomPackageSchema = z.object({
-  march: z.string(),
-  pkgbase: z.string(),
-  pkgname: z.string(),
-  repository: z.string(),
-  status: z.string(),
-  updated: z.number(),
-  version: z.string(),
-});
-export type CustomPackage = z.infer<typeof CustomPackageSchema>;
-export const CustomPackageResponseSchema = z.object({
-  custom_packages: z.array(CustomPackageSchema),
   total_items: z.number(),
   total_pages: z.number(),
 });
@@ -511,6 +498,31 @@ export enum SubmissionStatus {
   PENDING_REVIEW = 'PENDING_REVIEW',
   REJECTED = 'REJECTED',
 }
+
+export type CustomRepoResponse = z.infer<typeof CustomRepoResponseSchema>;
+
+export const submissionStatusValues = Object.values(SubmissionStatus);
+
+export const submissionStatus = z.enum(
+  SubmissionStatus,
+  `Submission status must be one of: ${submissionStatusValues.join(', ')}`
+);
+
+export const CustomPackageSchema = z.object({
+  march: z.string(),
+  pkgbase: z.string(),
+  pkgname: z.string(),
+  repository: z.string(),
+  status: packageStatus,
+  updated: z.number(),
+  version: z.string(),
+});
+export type CustomPackage = z.infer<typeof CustomPackageSchema>;
+export const CustomPackageResponseSchema = z.object({
+  custom_packages: z.array(CustomPackageSchema),
+  total_items: z.number(),
+  total_pages: z.number(),
+});
 
 export type CustomPackageResponse = z.infer<typeof CustomPackageResponseSchema>;
 
@@ -525,7 +537,7 @@ export const PackageSubmissionSchema = z.object({
   repo_name: z.string(),
   review_note: z.string().optional(),
   reviewer: z.string().optional(),
-  submission_status: z.string(),
+  submission_status: submissionStatus,
   submitter: z.string(),
   updated: z.number(),
 });

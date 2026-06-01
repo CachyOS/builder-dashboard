@@ -4,10 +4,9 @@ import {ArrowLeft, ChevronRight, Shield, Trash2} from 'lucide-react';
 import Link from 'next/link';
 import {useParams} from 'next/navigation';
 import {useCallback, useEffect, useMemo, useState} from 'react';
-import {toast} from 'sonner';
 
 import {
-  getMaintainers,
+  findMaintainersByUsername,
   getPackageSubmissions,
   revokeMaintainer,
 } from '@/app/actions/custom';
@@ -34,10 +33,12 @@ import {MetadataRow} from '@/components/ui/metadata-row';
 import {PageHeader} from '@/components/ui/page-header';
 import {useSidebar} from '@/components/ui/sidebar';
 import {StatusDot} from '@/components/ui/status-dot';
+import {runAction} from '@/lib/toast-action';
 import {
   isActionError,
   type MaintainerPolicy,
   type PackageSubmission,
+  unwrapOr,
   UserScope,
 } from '@/lib/typings';
 import {checkScopes} from '@/lib/utils';
@@ -54,33 +55,41 @@ export default function MaintainerDetailPage() {
     [scopes]
   );
 
-  const [policies, setPolicies] = useState<MaintainerPolicy[]>([]);
-  const [submissions, setSubmissions] = useState<PackageSubmission[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [revokeTarget, setRevokeTarget] = useState<MaintainerPolicy | null>(
-    null
-  );
-  const [busy, setBusy] = useState(false);
+  const [data, setData] = useState<{
+    loading: boolean;
+    submissions: PackageSubmission[];
+    userPolicies: MaintainerPolicy[];
+  }>({loading: true, submissions: [], userPolicies: []});
+  const [ui, setUi] = useState<{
+    busy: boolean;
+    revokeTarget: MaintainerPolicy | null;
+  }>({busy: false, revokeTarget: null});
 
-  const refresh = useCallback(() => {
-    setLoading(true);
-    Promise.all([getMaintainers(), getPackageSubmissions()])
-      .then(([m, s]) => {
-        if (!isActionError(m) && 'maintainers' in m) setPolicies(m.maintainers);
-        if (!isActionError(s) && 'submissions' in s)
-          setSubmissions(s.submissions);
-      })
-      .finally(() => setLoading(false));
-  }, []);
+  const {loading, submissions, userPolicies} = data;
+  const {busy, revokeTarget} = ui;
+
+  const refresh = useCallback(async () => {
+    if (!username) return;
+    setData(prev => ({...prev, loading: true}));
+    const [maintainers, subs] = await Promise.all([
+      findMaintainersByUsername(username),
+      getPackageSubmissions(),
+    ]);
+    // Recent reviews are derived from the first page of submissions (capped at 200).
+    setData({
+      loading: false,
+      submissions: unwrapOr(subs, {
+        submissions: [],
+        total_items: 0,
+        total_pages: 0,
+      }).submissions,
+      userPolicies: isActionError(maintainers) ? [] : maintainers,
+    });
+  }, [username]);
 
   useEffect(() => {
-    refresh();
+    void refresh();
   }, [refresh]);
-
-  const userPolicies = useMemo(
-    () => policies.filter(p => p.username === username),
-    [policies, username]
-  );
 
   const userActivity = useMemo(
     () =>
@@ -105,19 +114,22 @@ export default function MaintainerDetailPage() {
 
   const handleRevoke = async () => {
     if (!revokeTarget) return;
-    setBusy(true);
-    const t = toast.loading(`Revoking ${revokeTarget.pkgbase}…`);
+    const target = revokeTarget;
+    setUi(prev => ({...prev, busy: true}));
     try {
-      const r = await revokeMaintainer(revokeTarget.id);
-      if (isActionError(r)) {
-        toast.error(r.error, {id: t});
-      } else {
-        toast.success(`Revoked ${revokeTarget.pkgbase}.`, {id: t});
-        setRevokeTarget(null);
-        refresh();
-      }
+      await runAction(
+        `Revoking ${target.pkgbase}…`,
+        () => revokeMaintainer(target.id),
+        {
+          onSuccess: () => {
+            setUi(prev => ({...prev, revokeTarget: null}));
+            void refresh();
+          },
+          successMessage: `Revoked ${target.pkgbase}.`,
+        }
+      );
     } finally {
-      setBusy(false);
+      setUi(prev => ({...prev, busy: false}));
     }
   };
 
@@ -211,7 +223,9 @@ export default function MaintainerDetailPage() {
                 <Button
                   className="opacity-0 transition-opacity group-hover:opacity-100"
                   disabled={busy}
-                  onClick={() => setRevokeTarget(policy)}
+                  onClick={() =>
+                    setUi(prev => ({...prev, revokeTarget: policy}))
+                  }
                   size="icon"
                   variant="ghost"
                 >
@@ -273,7 +287,7 @@ export default function MaintainerDetailPage() {
       </Card>
 
       <Dialog
-        onOpenChange={o => !o && setRevokeTarget(null)}
+        onOpenChange={o => !o && setUi(prev => ({...prev, revokeTarget: null}))}
         open={!!revokeTarget}
       >
         <DialogContent className="max-w-md">

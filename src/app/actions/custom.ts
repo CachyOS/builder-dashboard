@@ -4,7 +4,24 @@ import {headers} from 'next/headers';
 import {redirect} from 'next/navigation';
 
 import {getSession} from '@/app/actions/session';
-import {AddMaintainerRequest, SubmitPackageRequest} from '@/lib/typings';
+import {
+  type ActionError,
+  AddMaintainerRequest,
+  type CustomPackage,
+  type CustomRepo,
+  isActionError,
+  type MaintainerPolicy,
+  type PackageSubmission,
+  SubmitPackageRequest,
+} from '@/lib/typings';
+
+const DEFAULT_PAGE_SIZE = 200;
+const MAX_LOOKUP_PAGES = 50;
+
+interface PageResult<T> {
+  items: T[];
+  totalPages: number;
+}
 
 export async function addMaintainer(request: AddMaintainerRequest) {
   const {cachyBuilderClient, session} = await getSession();
@@ -58,15 +75,78 @@ export async function cancelSubmission(id: string) {
   }
 }
 
-export async function getCustomPackages() {
+export async function findMaintainersByUsername(
+  username: string
+): Promise<ActionError | MaintainerPolicy[]> {
+  const matches: MaintainerPolicy[] = [];
+  let totalPages = 1;
+  for (let page = 1; page <= Math.min(totalPages, MAX_LOOKUP_PAGES); page++) {
+    const r = await getMaintainers(page, DEFAULT_PAGE_SIZE);
+    if (isActionError(r)) return r;
+    totalPages = r.total_pages;
+    for (const m of r.maintainers) {
+      if (m.username === username) matches.push(m);
+    }
+  }
+  return matches;
+}
+
+export async function findPackageBy(predicate: {
+  march: string;
+  pkgname: string;
+  repository: string;
+}): Promise<ActionError | CustomPackage | null> {
+  return findInPages<CustomPackage>(
+    async (page, size) => {
+      const r = await getCustomPackages(page, size);
+      if (isActionError(r)) return r;
+      return {items: r.custom_packages, totalPages: r.total_pages};
+    },
+    p =>
+      p.repository === predicate.repository &&
+      p.march === predicate.march &&
+      p.pkgname === predicate.pkgname
+  );
+}
+
+export async function findRepoById(
+  id: string
+): Promise<ActionError | CustomRepo | null> {
+  return findInPages<CustomRepo>(
+    async (page, size) => {
+      const r = await getCustomRepos(page, size);
+      if (isActionError(r)) return r;
+      return {items: r.repos, totalPages: r.total_pages};
+    },
+    repo => repo.id === id
+  );
+}
+
+export async function findSubmissionById(
+  id: string
+): Promise<ActionError | null | PackageSubmission> {
+  return findInPages<PackageSubmission>(
+    async (page, size) => {
+      const r = await getPackageSubmissions(undefined, page, size);
+      if (isActionError(r)) return r;
+      return {items: r.submissions, totalPages: r.total_pages};
+    },
+    s => s.id === id
+  );
+}
+
+export async function getCustomPackages(
+  currentPage = 1,
+  pageSize: number = DEFAULT_PAGE_SIZE
+) {
   const {cachyBuilderClient, session} = await getSession();
   if (!session.isLoggedIn) {
     return redirect('/');
   }
   try {
     return await cachyBuilderClient.custom.getCustomPackages(
-      1,
-      200,
+      currentPage,
+      pageSize,
       await headers()
     );
   } catch (error) {
@@ -76,15 +156,18 @@ export async function getCustomPackages() {
   }
 }
 
-export async function getCustomRepos() {
+export async function getCustomRepos(
+  currentPage = 1,
+  pageSize: number = DEFAULT_PAGE_SIZE
+) {
   const {cachyBuilderClient, session} = await getSession();
   if (!session.isLoggedIn) {
     return redirect('/');
   }
   try {
     return await cachyBuilderClient.custom.getCustomRepos(
-      1,
-      200,
+      currentPage,
+      pageSize,
       await headers()
     );
   } catch (error) {
@@ -94,7 +177,10 @@ export async function getCustomRepos() {
   }
 }
 
-export async function getMaintainers(currentPage = 1, pageSize = 200) {
+export async function getMaintainers(
+  currentPage = 1,
+  pageSize: number = DEFAULT_PAGE_SIZE
+) {
   const {cachyBuilderClient, session} = await getSession();
   if (!session.isLoggedIn) {
     return redirect('/');
@@ -112,7 +198,11 @@ export async function getMaintainers(currentPage = 1, pageSize = 200) {
   }
 }
 
-export async function getPackageSubmissions(status?: string) {
+export async function getPackageSubmissions(
+  status?: string,
+  currentPage = 1,
+  pageSize: number = DEFAULT_PAGE_SIZE
+) {
   const {cachyBuilderClient, session} = await getSession();
   if (!session.isLoggedIn) {
     return redirect('/');
@@ -120,8 +210,8 @@ export async function getPackageSubmissions(status?: string) {
   try {
     return await cachyBuilderClient.custom.getPackageSubmissions(
       status,
-      1,
-      200,
+      currentPage,
+      pageSize,
       await headers()
     );
   } catch (error) {
@@ -195,4 +285,24 @@ export async function submitPackage(request: SubmitPackageRequest) {
       error: `Failed to submit package: ${error instanceof Error ? error.message : 'Unknown error'}`,
     };
   }
+}
+
+async function findInPages<T>(
+  fetchPage: (
+    page: number,
+    pageSize: number
+  ) => Promise<ActionError | PageResult<T>>,
+  predicate: (item: T) => boolean,
+  pageSize: number = DEFAULT_PAGE_SIZE,
+  maxPages: number = MAX_LOOKUP_PAGES
+): Promise<ActionError | null | T> {
+  let totalPages = 1;
+  for (let page = 1; page <= Math.min(totalPages, maxPages); page++) {
+    const result = await fetchPage(page, pageSize);
+    if (isActionError(result)) return result;
+    totalPages = result.totalPages;
+    const match = result.items.find(predicate);
+    if (match) return match;
+  }
+  return null;
 }

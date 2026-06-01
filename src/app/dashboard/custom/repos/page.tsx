@@ -2,7 +2,7 @@
 
 import {GitBranch, Search} from 'lucide-react';
 import Link from 'next/link';
-import {useEffect, useMemo, useState} from 'react';
+import {useCallback, useMemo, useState} from 'react';
 
 import {getCustomRepos} from '@/app/actions/custom';
 import Loader from '@/components/loader';
@@ -18,28 +18,25 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import {type CustomRepo} from '@/lib/typings';
+import {useInfiniteList} from '@/lib/hooks/use-infinite-list';
+import {type CustomRepo, isActionError} from '@/lib/typings';
 
 export default function ReposListPage() {
-  const [repos, setRepos] = useState<CustomRepo[]>([]);
-  const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
   const [archFilter, setArchFilter] = useState('ALL');
 
-  useEffect(() => {
-    let cancelled = false;
-    getCustomRepos()
-      .then(data => {
-        if (cancelled || 'error' in data) return;
-        setRepos(data.repos);
-      })
-      .finally(() => {
-        if (!cancelled) setLoading(false);
-      });
-    return () => {
-      cancelled = true;
-    };
+  const fetchPage = useCallback(async (page: number, size: number) => {
+    const r = await getCustomRepos(page, size);
+    if (isActionError(r)) return r;
+    return {items: r.repos, totalPages: r.total_pages};
   }, []);
+
+  const {
+    hasMore,
+    items: repos,
+    loading,
+    sentinelRef,
+  } = useInfiniteList<CustomRepo>(fetchPage);
 
   const archOptions = useMemo(() => {
     const set = new Set<string>();
@@ -55,6 +52,8 @@ export default function ReposListPage() {
       return true;
     });
   }, [repos, search, archFilter]);
+
+  const initialLoading = loading && repos.length === 0;
 
   return (
     <div className="flex flex-col gap-4">
@@ -90,7 +89,7 @@ export default function ReposListPage() {
         </div>
       </FilterToolbar>
 
-      {loading ? (
+      {initialLoading ? (
         <Loader animate text="Loading repos…" />
       ) : filtered.length === 0 ? (
         <EmptyState
@@ -126,6 +125,15 @@ export default function ReposListPage() {
             </li>
           ))}
         </ul>
+      )}
+
+      {hasMore && (
+        <div
+          className="py-2 text-center text-xs text-muted-foreground"
+          ref={sentinelRef}
+        >
+          {loading ? 'Loading more…' : ''}
+        </div>
       )}
     </div>
   );

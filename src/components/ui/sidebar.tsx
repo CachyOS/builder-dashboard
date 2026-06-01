@@ -42,14 +42,40 @@ type SidebarContextProps = {
   refresh: boolean;
   scopes: UserScope[];
   setActiveServer: (server: string) => void;
+  setAuth: (auth: {scopes: UserScope[]; username: string}) => void;
   setOpen: (open: boolean) => void;
   setOpenMobile: (open: boolean) => void;
-  setScopes: (scopes: UserScope[]) => void;
   state: 'collapsed' | 'expanded';
   toggleSidebar: () => void;
+  username: string;
 };
 
 const SidebarContext = React.createContext<null | SidebarContextProps>(null);
+
+type SessionAction =
+  | {type: 'set-active-server'; value: string}
+  | {type: 'set-auth'; value: {scopes: UserScope[]; username: string}}
+  | {type: 'toggle-refresh'};
+
+type SessionState = {
+  activeServer: string;
+  auth: {scopes: UserScope[]; username: string};
+  refresh: boolean;
+};
+
+function sessionReducer(
+  state: SessionState,
+  action: SessionAction
+): SessionState {
+  switch (action.type) {
+    case 'set-active-server':
+      return {...state, activeServer: action.value};
+    case 'set-auth':
+      return {...state, auth: action.value};
+    case 'toggle-refresh':
+      return {...state, refresh: !state.refresh};
+  }
+}
 
 function Sidebar({
   children,
@@ -323,11 +349,25 @@ function SidebarProvider({
 }) {
   const isMobile = useIsMobile();
   const [openMobile, setOpenMobile] = React.useState(false);
-  const [refresh, setRefresh] = React.useState(false);
-  const [activeServer, setActiveServer] = React.useState<string>('');
   // TODO: Extract into global auth context.
-  const [scopes, setScopes] = React.useState<UserScope[]>([]);
-  const doRefresh = React.useCallback(() => setRefresh(curr => !curr), []);
+  const [session, dispatchSession] = React.useReducer(sessionReducer, {
+    activeServer: '',
+    auth: {scopes: [], username: ''},
+    refresh: false,
+  });
+  const setActiveServer = React.useCallback(
+    (value: string) => dispatchSession({type: 'set-active-server', value}),
+    []
+  );
+  const setAuth = React.useCallback(
+    (value: {scopes: UserScope[]; username: string}) =>
+      dispatchSession({type: 'set-auth', value}),
+    []
+  );
+  const doRefresh = React.useCallback(
+    () => dispatchSession({type: 'toggle-refresh'}),
+    []
+  );
 
   // This is the internal state of the sidebar.
   // We use openProp and setOpenProp for control from outside the component.
@@ -375,28 +415,29 @@ function SidebarProvider({
 
   const contextValue = React.useMemo<SidebarContextProps>(
     () => ({
-      activeServer,
+      activeServer: session.activeServer,
       doRefresh,
       isMobile,
       open,
       openMobile,
-      refresh,
-      scopes,
+      refresh: session.refresh,
+      scopes: session.auth.scopes,
       setActiveServer,
+      setAuth,
       setOpen,
       setOpenMobile,
-      setScopes,
       state,
       toggleSidebar,
+      username: session.auth.username,
     }),
     [
-      activeServer,
       doRefresh,
       isMobile,
       open,
       openMobile,
-      refresh,
-      scopes,
+      session,
+      setActiveServer,
+      setAuth,
       setOpen,
       state,
       toggleSidebar,
@@ -448,6 +489,7 @@ function SidebarRail({className, ...props}: React.ComponentProps<'button'>) {
       onClick={toggleSidebar}
       tabIndex={-1}
       title="Toggle Sidebar"
+      type="button"
       {...props}
     />
   );
@@ -494,7 +536,7 @@ function SidebarTrigger({
 }
 
 function useSidebar() {
-  const context = React.useContext(SidebarContext);
+  const context = React.use(SidebarContext);
   if (!context) {
     throw new Error('useSidebar must be used within a SidebarProvider.');
   }
@@ -633,11 +675,10 @@ function SidebarMenuSkeleton({
 }: React.ComponentProps<'div'> & {
   showIcon?: boolean;
 }) {
-  // Random width between 50 to 90%.
-  const width = React.useMemo(() => {
-    // eslint-disable-next-line react-hooks/purity
-    return `${Math.floor(Math.random() * 40) + 50}%`;
-  }, []);
+  // Random width between 50 to 90%
+  const [width] = React.useState(
+    () => `${Math.floor(Math.random() * 40) + 50}%`
+  );
 
   return (
     <div

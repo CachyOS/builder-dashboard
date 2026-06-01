@@ -6,10 +6,14 @@ import {useParams} from 'next/navigation';
 import {useEffect, useMemo, useState} from 'react';
 
 import {
+  findRepoById,
   getCustomPackages,
-  getCustomRepos,
   getPackageSubmissions,
 } from '@/app/actions/custom';
+import {
+  pulseFor as pkgPulseFor,
+  toneFor as pkgToneFor,
+} from '@/components/custom/package-status';
 import {
   labelFor,
   pulseFor,
@@ -19,24 +23,17 @@ import Loader from '@/components/loader';
 import {Card, CardContent, CardHeader, CardTitle} from '@/components/ui/card';
 import {MetadataRow} from '@/components/ui/metadata-row';
 import {PageHeader} from '@/components/ui/page-header';
-import {StatusDot, type StatusTone} from '@/components/ui/status-dot';
+import {StatusDot} from '@/components/ui/status-dot';
 import {
   type CustomPackage,
   type CustomRepo,
   isActionError,
   type PackageSubmission,
   SubmissionStatus,
+  unwrapOr,
 } from '@/lib/typings';
 
 const THIRTY_DAYS = 30 * 24 * 60 * 60 * 1000;
-
-const pkgStatusTone: Record<string, StatusTone> = {
-  BUILDING: 'building',
-  DONE: 'success',
-  FAILED: 'danger',
-  QUEUED: 'warning',
-  SKIPPED: 'muted',
-};
 
 interface RepoData {
   loading: boolean;
@@ -58,21 +55,29 @@ export default function RepoDetailPage() {
   const [now] = useState(() => Date.now());
 
   useEffect(() => {
+    if (!id) return;
     let cancelled = false;
+    // Aggregates summarize the first page of packages/submissions (capped at 200).
+    // For larger repos the percentages reflect a sample, not the full dataset.
     Promise.all([
-      getCustomRepos(),
+      findRepoById(id),
       getCustomPackages(),
       getPackageSubmissions(),
-    ]).then(([rs, ps, ss]) => {
+    ]).then(([repoResult, ps, ss]) => {
       if (cancelled) return;
       setData({
         loading: false,
-        packages: !('error' in ps) ? ps.custom_packages : [],
-        repo: !('error' in rs)
-          ? (rs.repos.find(r => r.id === id) ?? null)
-          : null,
-        submissions:
-          !isActionError(ss) && 'submissions' in ss ? ss.submissions : [],
+        packages: unwrapOr(ps, {
+          custom_packages: [],
+          total_items: 0,
+          total_pages: 0,
+        }).custom_packages,
+        repo: isActionError(repoResult) ? null : repoResult,
+        submissions: unwrapOr(ss, {
+          submissions: [],
+          total_items: 0,
+          total_pages: 0,
+        }).submissions,
       });
     });
     return () => {
@@ -246,8 +251,8 @@ export default function RepoDetailPage() {
                   key={`${pkg.march}-${pkg.pkgname}`}
                 >
                   <StatusDot
-                    pulse={pkg.status === 'BUILDING'}
-                    tone={pkgStatusTone[pkg.status] ?? 'muted'}
+                    pulse={pkgPulseFor(pkg.status)}
+                    tone={pkgToneFor(pkg.status)}
                   />
                   <div className="flex min-w-0 flex-1 flex-col gap-0.5">
                     <span className="truncate text-sm font-medium">
