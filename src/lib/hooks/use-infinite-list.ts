@@ -8,7 +8,9 @@ import {
   useRef,
   useState,
 } from 'react';
+import {toast} from 'sonner';
 
+import {ERROR_TOAST_OPTIONS} from '@/lib/toast-action';
 import {type ActionError, isActionError} from '@/lib/typings';
 
 interface Page<T> {
@@ -76,6 +78,12 @@ export function useInfiniteList<T>(
   useEffect(() => {
     reload();
   }, [reload]);
+
+  useEffect(() => {
+    if (error) {
+      toast.error(error, {...ERROR_TOAST_OPTIONS, id: 'infinite-list-error'});
+    }
+  }, [error]);
 
   const hasMore = currentPage > 0 && currentPage < totalPages;
 

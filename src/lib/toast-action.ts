@@ -4,6 +4,11 @@ import {toast} from 'sonner';
 
 import {type ActionError, isActionError} from '@/lib/typings';
 
+export const ERROR_TOAST_OPTIONS = {
+  closeButton: true,
+  duration: Infinity,
+} as const;
+
 interface RunActionOptions<T> {
   errorFallback?: string;
   onSuccess?: (result: T) => void;
@@ -19,11 +24,7 @@ export async function runAction<T>(
   try {
     const result = await fn();
     if (isActionError(result)) {
-      toast.error(result.error, {
-        closeButton: true,
-        duration: Infinity,
-        id: toastId,
-      });
+      toast.error(result.error, {...ERROR_TOAST_OPTIONS, id: toastId});
       return result;
     }
     const successMessage =
@@ -43,11 +44,7 @@ export async function runAction<T>(
       (error instanceof Error
         ? error.message
         : 'An unexpected error occurred.');
-    toast.error(message, {
-      closeButton: true,
-      duration: Infinity,
-      id: toastId,
-    });
+    toast.error(message, {...ERROR_TOAST_OPTIONS, id: toastId});
     return {error: message};
   }
 }
