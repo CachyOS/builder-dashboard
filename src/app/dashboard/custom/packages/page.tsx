@@ -240,14 +240,16 @@ export default function PackagesListPage() {
         open={dialogOpen}
         packages={selected ? [selected] : packages}
         prefill={
-          selected && {
-            pkgbase: selected.pkgbase,
-            repoId: repos.find(
-              r =>
-                r.repo_name === selected.repository &&
-                r.march === selected.march
-            )?.id,
-          }
+          selected
+            ? {
+                pkgbase: selected.pkgbase,
+                repoId: repos.find(
+                  r =>
+                    r.repo_name === selected.repository &&
+                    r.march === selected.march
+                )?.id,
+              }
+            : undefined
         }
         repos={repos}
       />

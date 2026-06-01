@@ -42,6 +42,10 @@ const chartConfig: Record<PackageStatus, ChartConfigValue> = {
     color: 'var(--chart-1)',
     label: 'Building',
   },
+  CANCELLED: {
+    color: 'var(--chart-8)',
+    label: 'Cancelled',
+  },
   DONE: {
     color: 'var(--chart-2)',
     label: 'Done',

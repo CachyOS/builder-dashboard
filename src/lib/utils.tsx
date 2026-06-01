@@ -24,10 +24,6 @@ export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
 }
 
-export function unixToDate(seconds: number): Date {
-  return new Date(seconds * 1000);
-}
-
 export function getColorClassNameByPackageStatus(status: PackageStatus) {
   switch (status) {
     case PackageStatus.BUILDING:
@@ -113,4 +109,8 @@ export function repoActionTypeToIcon(actionType: RepoActionType) {
         <IconProgressHelp className="fill-gray-500 size-5 stroke-gray-50" />
       );
   }
+}
+
+export function unixToDate(seconds: number): Date {
+  return new Date(seconds * 1000);
 }
