@@ -48,12 +48,16 @@ export function AddMaintainerDialog({
   packages,
   repos,
 }: Readonly<AddMaintainerDialogProps>) {
-  const [username, setUsername] = useState('');
-  const [repoId, setRepoId] = useState('');
-  const [pkgbase, setPkgbase] = useState('');
-  const [autoQueue, setAutoQueue] = useState(false);
-  const [submitting, setSubmitting] = useState(false);
-  const [suggestionsOpen, setSuggestionsOpen] = useState(false);
+  const [form, setForm] = useState({
+    autoQueue: false,
+    pkgbase: '',
+    repoId: '',
+    username: '',
+  });
+  const [ui, setUi] = useState({submitting: false, suggestionsOpen: false});
+
+  const {autoQueue, pkgbase, repoId, username} = form;
+  const {submitting, suggestionsOpen} = ui;
   const pkgbaseInputRef = useRef<HTMLInputElement>(null);
 
   const uniquePkgbases = useMemo(() => {
@@ -77,11 +81,8 @@ export function AddMaintainerDialog({
     username.trim().toLowerCase() === currentUser.toLowerCase();
 
   function resetForm() {
-    setUsername('');
-    setRepoId('');
-    setPkgbase('');
-    setAutoQueue(false);
-    setSuggestionsOpen(false);
+    setForm({autoQueue: false, pkgbase: '', repoId: '', username: ''});
+    setUi(prev => ({...prev, suggestionsOpen: false}));
   }
 
   async function handleSubmit(e: React.FormEvent) {
@@ -101,7 +102,7 @@ export function AddMaintainerDialog({
       return;
     }
 
-    setSubmitting(true);
+    setUi(prev => ({...prev, submitting: true}));
     const toastId = toast.loading('Adding maintainer...');
     try {
       const result = await addMaintainer(parsed.data);
@@ -127,7 +128,7 @@ export function AddMaintainerDialog({
         id: toastId,
       });
     } finally {
-      setSubmitting(false);
+      setUi(prev => ({...prev, submitting: false}));
     }
   }
 
@@ -152,7 +153,9 @@ export function AddMaintainerDialog({
             <Label htmlFor="maintainer-username">Username</Label>
             <Input
               id="maintainer-username"
-              onChange={e => setUsername(e.target.value)}
+              onChange={e =>
+                setForm(prev => ({...prev, username: e.target.value}))
+              }
               placeholder="e.g. johndoe"
               required
               value={username}
@@ -165,7 +168,10 @@ export function AddMaintainerDialog({
           </div>
           <div className="grid gap-2">
             <Label htmlFor="maintainer-repo">Repository</Label>
-            <Select onValueChange={setRepoId} value={repoId}>
+            <Select
+              onValueChange={v => setForm(prev => ({...prev, repoId: v}))}
+              value={repoId}
+            >
               <SelectTrigger className="w-full" id="maintainer-repo">
                 <SelectValue placeholder="Select a repository" />
               </SelectTrigger>
@@ -183,12 +189,24 @@ export function AddMaintainerDialog({
             <div className="relative">
               <Input
                 id="maintainer-pkgbase"
+                onBlur={() => {
+                  // Defer so the suggestion button's mousedown→click can fire first.
+                  setTimeout(
+                    () => setUi(prev => ({...prev, suggestionsOpen: false})),
+                    120
+                  );
+                }}
                 onChange={e => {
-                  setPkgbase(e.target.value);
-                  setSuggestionsOpen(true);
+                  setForm(prev => ({...prev, pkgbase: e.target.value}));
+                  setUi(prev => ({...prev, suggestionsOpen: true}));
                 }}
                 onFocus={() => {
-                  if (filteredSuggestions.length > 0) setSuggestionsOpen(true);
+                  if (filteredSuggestions.length > 0)
+                    setUi(prev => ({...prev, suggestionsOpen: true}));
+                }}
+                onKeyDown={e => {
+                  if (e.key === 'Escape')
+                    setUi(prev => ({...prev, suggestionsOpen: false}));
                 }}
                 placeholder="e.g. my-package"
                 ref={pkgbaseInputRef}
@@ -202,8 +220,8 @@ export function AddMaintainerDialog({
                       className="w-full px-3 py-1.5 text-left text-sm hover:bg-accent hover:text-accent-foreground"
                       key={suggestion}
                       onClick={() => {
-                        setPkgbase(suggestion);
-                        setSuggestionsOpen(false);
+                        setForm(prev => ({...prev, pkgbase: suggestion}));
+                        setUi(prev => ({...prev, suggestionsOpen: false}));
                         pkgbaseInputRef.current?.focus();
                       }}
                       onMouseDown={e => e.preventDefault()}
@@ -220,7 +238,9 @@ export function AddMaintainerDialog({
             <Checkbox
               checked={autoQueue}
               id="maintainer-auto-queue"
-              onCheckedChange={checked => setAutoQueue(checked === true)}
+              onCheckedChange={checked =>
+                setForm(prev => ({...prev, autoQueue: checked === true}))
+              }
             />
             <Label htmlFor="maintainer-auto-queue">Auto Queue</Label>
           </div>

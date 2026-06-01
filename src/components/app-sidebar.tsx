@@ -32,7 +32,7 @@ import {
   SidebarGroup,
   SidebarGroupLabel,
   SidebarHeader,
-  SidebarMenu,
+  SidebarMenuSub,
   SidebarMenuSubButton,
   SidebarMenuSubItem,
   SidebarRail,
@@ -69,16 +69,30 @@ const items = [
   },
 ];
 
-const customSubItems = [
+interface CustomSubItem {
+  adminOnly?: boolean;
+  icon: typeof GitBranch;
+  name: string;
+  tab: string;
+}
+
+const customSubItems: readonly CustomSubItem[] = [
   {icon: GitBranch, name: 'Repos', tab: 'repos'},
   {icon: Package, name: 'Packages', tab: 'packages'},
   {icon: FileCheck, name: 'Submissions', tab: 'submissions'},
-  {icon: Shield, name: 'Maintainers', tab: 'maintainers'},
-] as const;
+  {adminOnly: true, icon: Shield, name: 'Maintainers', tab: 'maintainers'},
+];
+
+const INITIAL_USER: UserData = {
+  displayName: 'Loading...',
+  profile_picture_url: '/cachyos-logo.svg',
+  scopes: [],
+  username: 'Loading...',
+};
 
 export function AppSidebar({...props}: React.ComponentProps<typeof Sidebar>) {
-  const {activeServer, refresh, setScopes} = useSidebar();
-  const [servers, setServers] = React.useState(
+  const {activeServer, refresh, setAuth} = useSidebar();
+  const [servers, setServers] = React.useState(() =>
     CachyBuilderClient.servers.map(server => ({
       accessible: true,
       active: server.default,
@@ -86,28 +100,41 @@ export function AppSidebar({...props}: React.ComponentProps<typeof Sidebar>) {
       name: server.name,
     }))
   );
-  const [user, setUser] = React.useState<UserData>({
-    displayName: 'Loading...',
-    profile_picture_url: '/cachyos-logo.svg',
-    scopes: [],
-    username: 'Loading...',
-  });
+  const [user, setUser] = React.useState<UserData>(INITIAL_USER);
   React.useEffect(() => {
-    getAccessibleServers().then(data => setServers(data));
+    getAccessibleServers().then(setServers);
+  }, [activeServer, refresh]);
+
+  React.useEffect(() => {
     getLoggedInUser(false).then(data => {
       if ('error' in data) {
         toast.error(data.error, {
           closeButton: true,
           duration: Infinity,
         });
-      } else {
-        setUser(data);
-        setScopes(data.scopes);
+        return;
       }
+      setUser(data);
+      setAuth({scopes: data.scopes, username: data.username});
     });
-  }, [activeServer, refresh, setScopes]);
+  }, [activeServer, refresh, setAuth]);
 
   const isAdmin = user.scopes.includes(UserScope.ADMIN);
+
+  const customMenuItems: React.ReactNode[] = [];
+  for (const sub of customSubItems) {
+    if (sub.adminOnly && !isAdmin) continue;
+    customMenuItems.push(
+      <SidebarMenuSubItem key={sub.tab}>
+        <SidebarMenuSubButton asChild>
+          <Link href={`/dashboard/custom/${sub.tab}`}>
+            <sub.icon />
+            <span>{sub.name}</span>
+          </Link>
+        </SidebarMenuSubButton>
+      </SidebarMenuSubItem>
+    );
+  }
 
   return (
     <Sidebar collapsible="icon" {...props}>
@@ -129,20 +156,7 @@ export function AppSidebar({...props}: React.ComponentProps<typeof Sidebar>) {
               </CollapsibleTrigger>
             </SidebarGroupLabel>
             <CollapsibleContent>
-              <SidebarMenu>
-                {customSubItems
-                  .filter(sub => sub.tab !== 'maintainers' || isAdmin)
-                  .map(sub => (
-                    <SidebarMenuSubItem key={sub.tab}>
-                      <SidebarMenuSubButton asChild>
-                        <Link href={`/dashboard/custom/${sub.tab}`}>
-                          <sub.icon />
-                          <span>{sub.name}</span>
-                        </Link>
-                      </SidebarMenuSubButton>
-                    </SidebarMenuSubItem>
-                  ))}
-              </SidebarMenu>
+              <SidebarMenuSub>{customMenuItems}</SidebarMenuSub>
             </CollapsibleContent>
           </Collapsible>
         </SidebarGroup>

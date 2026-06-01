@@ -16,6 +16,7 @@ import {type PackageSubmission, SubmissionStatus} from '@/lib/typings';
 
 interface SubmissionDetailHeaderProps {
   busy: boolean;
+  currentUser: string;
   isAdmin: boolean;
   onApprove: () => void;
   onCancel: () => void;
@@ -26,6 +27,7 @@ interface SubmissionDetailHeaderProps {
 
 export function SubmissionDetailHeader({
   busy,
+  currentUser,
   isAdmin,
   onApprove,
   onCancel,
@@ -38,8 +40,9 @@ export function SubmissionDetailHeader({
     isAdmin && status === SubmissionStatus.PENDING_REVIEW;
   const canQueue = isAdmin && status === SubmissionStatus.APPROVED;
   const canCancel =
-    status === SubmissionStatus.APPROVED ||
-    status === SubmissionStatus.BUILD_QUEUED;
+    (isAdmin || submission.submitter === currentUser) &&
+    (status === SubmissionStatus.APPROVED ||
+      status === SubmissionStatus.BUILD_QUEUED);
 
   return (
     <>

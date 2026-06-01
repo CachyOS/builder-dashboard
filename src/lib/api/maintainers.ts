@@ -82,7 +82,7 @@ export class MaintainersClient {
         endpoint: `admin/maintainers/${id}`,
         init: {method: 'DELETE'},
       })
-      .catch(() => ({revoked: false}));
+      .catch(() => ({}));
     return parseOrThrow(
       RevokeMaintainerResponseSchema,
       response,

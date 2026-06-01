@@ -2,16 +2,8 @@
 
 import {FileCheck, Plus} from 'lucide-react';
 import {useCallback, useEffect, useMemo, useState} from 'react';
-import {toast} from 'sonner';
 
-import {
-  approveSubmission,
-  cancelSubmission,
-  getCustomRepos,
-  getPackageSubmissions,
-  queueSubmission,
-  rejectSubmission,
-} from '@/app/actions/custom';
+import {getCustomRepos, getPackageSubmissions} from '@/app/actions/custom';
 import {SubmitPackageDialog} from '@/components/custom/submit-package-dialog';
 import Loader from '@/components/loader';
 import {Button} from '@/components/ui/button';
@@ -19,11 +11,13 @@ import {Checkbox} from '@/components/ui/checkbox';
 import {EmptyState} from '@/components/ui/empty-state';
 import {PageHeader} from '@/components/ui/page-header';
 import {useSidebar} from '@/components/ui/sidebar';
+import {useInfiniteList} from '@/lib/hooks/use-infinite-list';
 import {type SavedView, useSavedViews} from '@/lib/saved-views';
 import {
   type CustomRepo,
   isActionError,
   type PackageSubmission,
+  unwrapOr,
   UserScope,
 } from '@/lib/typings';
 import {checkScopes} from '@/lib/utils';
@@ -32,18 +26,23 @@ import {BulkActionDialog} from './_bulk-dialog';
 import {SubmissionFilterBar} from './_filter-bar';
 import {SubmissionRow} from './_row';
 import {SubmissionSelectionBar} from './_selection-bar';
-import {
-  actionLabel,
-  BUILTIN_VIEWS,
-  type BulkAction,
-  DEFAULT_FILTERS,
-  type SubmissionFilters,
-} from './_types';
+import {BUILTIN_VIEWS, DEFAULT_FILTERS, type SubmissionFilters} from './_types';
+import {useBulkSubmissionActions} from './_use-bulk-actions';
 
 const ONE_DAY_MS = 24 * 60 * 60 * 1000;
 
+interface ViewState {
+  activeViewId: null | string;
+  filters: SubmissionFilters;
+}
+
+const INITIAL_VIEW: ViewState = {
+  activeViewId: null,
+  filters: DEFAULT_FILTERS,
+};
+
 export default function SubmissionsListPage() {
-  const {scopes} = useSidebar();
+  const {scopes, username: currentUser} = useSidebar();
   const isAdmin = useMemo(
     () => checkScopes(scopes, [UserScope.ADMIN]),
     [scopes]
@@ -55,39 +54,45 @@ export default function SubmissionsListPage() {
     [scopes]
   );
 
-  const [submissions, setSubmissions] = useState<PackageSubmission[]>([]);
   const [repos, setRepos] = useState<CustomRepo[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [filters, setFilters] = useState<SubmissionFilters>(DEFAULT_FILTERS);
-  const [activeViewId, setActiveViewId] = useState<null | string>(null);
-  const [selected, setSelected] = useState<Set<string>>(new Set());
+  const [view, setView] = useState<ViewState>(INITIAL_VIEW);
+  const [pageUi, setPageUi] = useState<{
+    now: number;
+    selected: Set<string>;
+    submitOpen: boolean;
+  }>(() => ({now: Date.now(), selected: new Set(), submitOpen: false}));
 
-  const [now] = useState(() => Date.now());
-  const [submitOpen, setSubmitOpen] = useState(false);
-  const [bulkAction, setBulkAction] = useState<BulkAction | null>(null);
-  const [bulkIds, setBulkIds] = useState<string[]>([]);
-  const [bulkLoading, setBulkLoading] = useState(false);
+  const {activeViewId, filters} = view;
+  const {now, selected, submitOpen} = pageUi;
+  const setSubmitOpen = useCallback(
+    (open: boolean) => setPageUi(prev => ({...prev, submitOpen: open})),
+    []
+  );
+
+  const fetchPage = useCallback(async (page: number, size: number) => {
+    const r = await getPackageSubmissions(undefined, page, size);
+    if (isActionError(r)) return r;
+    return {items: r.submissions, totalPages: r.total_pages};
+  }, []);
+
+  const {
+    hasMore,
+    items: submissions,
+    loading,
+    reload: refresh,
+    sentinelRef,
+  } = useInfiniteList<PackageSubmission>(fetchPage);
+
+  useEffect(() => {
+    getCustomRepos().then(r => {
+      setRepos(unwrapOr(r, {repos: [], total_items: 0, total_pages: 0}).repos);
+    });
+  }, []);
 
   const {remove, save, views} = useSavedViews<SubmissionFilters>(
     'custom.submissions.savedViews',
     BUILTIN_VIEWS
   );
-
-  const refresh = useCallback(() => {
-    setLoading(true);
-    Promise.all([getPackageSubmissions(), getCustomRepos()])
-      .then(([subs, rs]) => {
-        if (!isActionError(subs) && 'submissions' in subs) {
-          setSubmissions(subs.submissions);
-        }
-        if (!('error' in rs)) setRepos(rs.repos);
-      })
-      .finally(() => setLoading(false));
-  }, []);
-
-  useEffect(() => {
-    refresh();
-  }, [refresh]);
 
   const archOptions = useMemo(() => {
     const s = new Set<string>();
@@ -117,28 +122,32 @@ export default function SubmissionsListPage() {
     filtered.length > 0 && filtered.every(f => selected.has(f.id));
   const someChecked = selected.size > 0;
 
-  const clearSelection = useCallback(() => setSelected(new Set()), []);
+  const clearSelection = useCallback(
+    () => setPageUi(prev => ({...prev, selected: new Set()})),
+    []
+  );
 
   const toggleAll = useCallback(() => {
-    setSelected(prev => {
-      if (filtered.every(f => prev.has(f.id))) return new Set();
-      return new Set(filtered.map(f => f.id));
+    setPageUi(prev => {
+      const next = filtered.every(f => prev.selected.has(f.id))
+        ? new Set<string>()
+        : new Set(filtered.map(f => f.id));
+      return {...prev, selected: next};
     });
   }, [filtered]);
 
   const toggleOne = useCallback((id: string) => {
-    setSelected(prev => {
-      const next = new Set(prev);
+    setPageUi(prev => {
+      const next = new Set(prev.selected);
       if (next.has(id)) next.delete(id);
       else next.add(id);
-      return next;
+      return {...prev, selected: next};
     });
   }, []);
 
   const handleSelectView = useCallback(
-    (view: SavedView<SubmissionFilters>) => {
-      setFilters(view.filters);
-      setActiveViewId(view.id);
+    (next: SavedView<SubmissionFilters>) => {
+      setView({activeViewId: next.id, filters: next.filters});
       clearSelection();
     },
     [clearSelection]
@@ -147,7 +156,7 @@ export default function SubmissionsListPage() {
   const handleSaveView = useCallback(
     (name: string) => {
       const next = save(name, filters);
-      setActiveViewId(next.id);
+      setView(prev => ({...prev, activeViewId: next.id}));
     },
     [save, filters]
   );
@@ -157,65 +166,28 @@ export default function SubmissionsListPage() {
       key: K,
       value: SubmissionFilters[K]
     ) => {
-      setFilters(prev => ({...prev, [key]: value}));
-      setActiveViewId(null);
+      setView(prev => ({
+        activeViewId: null,
+        filters: {...prev.filters, [key]: value},
+      }));
     },
     []
   );
 
-  const openBulk = useCallback(
-    (action: BulkAction) => {
-      setBulkIds(Array.from(selected));
-      setBulkAction(action);
-    },
-    [selected]
-  );
+  const onBulkComplete = useCallback(() => {
+    clearSelection();
+    refresh();
+  }, [clearSelection, refresh]);
 
-  const runBulk = useCallback(
-    async (note: string) => {
-      if (!bulkAction) return;
-      setBulkLoading(true);
-      const trimmed = note.trim() || undefined;
-      const toastId = toast.loading(
-        `${actionLabel(bulkAction)} ${bulkIds.length} submission(s)…`
-      );
-      try {
-        const results = await Promise.all(
-          bulkIds.map(id => {
-            switch (bulkAction) {
-              case 'approve':
-                return approveSubmission(id, trimmed);
-              case 'cancel':
-                return cancelSubmission(id);
-              case 'queue':
-                return queueSubmission(id);
-              case 'reject':
-                return rejectSubmission(id, trimmed);
-            }
-          })
-        );
-        const failed = results.filter(isActionError).length;
-        if (failed > 0) {
-          toast.error(`${failed} of ${results.length} action(s) failed`, {
-            id: toastId,
-          });
-        } else {
-          toast.success(
-            `${actionLabel(bulkAction)} ${results.length} submission(s).`,
-            {id: toastId}
-          );
-        }
-        setBulkAction(null);
-        clearSelection();
-        refresh();
-      } catch {
-        toast.error('An unexpected error occurred.', {id: toastId});
-      } finally {
-        setBulkLoading(false);
-      }
-    },
-    [bulkAction, bulkIds, clearSelection, refresh]
-  );
+  const bulk = useBulkSubmissionActions({
+    currentUser,
+    isAdmin,
+    onComplete: onBulkComplete,
+    selected,
+    submissions,
+  });
+
+  const initialLoading = loading && submissions.length === 0;
 
   return (
     <div className="flex flex-col gap-4">
@@ -240,7 +212,7 @@ export default function SubmissionsListPage() {
         <SubmissionSelectionBar
           count={selected.size}
           isAdmin={isAdmin}
-          onAction={openBulk}
+          onAction={bulk.open}
           onClear={clearSelection}
         />
       ) : (
@@ -257,7 +229,7 @@ export default function SubmissionsListPage() {
         />
       )}
 
-      {loading ? (
+      {initialLoading ? (
         <Loader animate text="Loading submissions…" />
       ) : filtered.length === 0 ? (
         <EmptyState
@@ -306,6 +278,15 @@ export default function SubmissionsListPage() {
         </ul>
       )}
 
+      {hasMore && (
+        <div
+          className="py-2 text-center text-xs text-muted-foreground"
+          ref={sentinelRef}
+        >
+          {loading ? 'Loading more…' : ''}
+        </div>
+      )}
+
       <SubmitPackageDialog
         onOpenChange={setSubmitOpen}
         onSuccess={refresh}
@@ -314,11 +295,11 @@ export default function SubmissionsListPage() {
       />
 
       <BulkActionDialog
-        action={bulkAction}
-        count={bulkIds.length}
-        loading={bulkLoading}
-        onConfirm={runBulk}
-        onOpenChange={open => !open && setBulkAction(null)}
+        action={bulk.action}
+        count={bulk.ids.length}
+        loading={bulk.loading}
+        onConfirm={bulk.run}
+        onOpenChange={open => !open && bulk.close()}
       />
     </div>
   );

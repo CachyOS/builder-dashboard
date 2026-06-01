@@ -4,8 +4,12 @@ import {Package as PackageIcon, Search, UserPlus} from 'lucide-react';
 import {useCallback, useEffect, useMemo, useState} from 'react';
 
 import {getCustomPackages, getCustomRepos} from '@/app/actions/custom';
-import {getLoggedInUser} from '@/app/actions/session';
 import {AddMaintainerDialog} from '@/components/custom/add-maintainer-dialog';
+import {
+  pulseFor,
+  toneFor,
+  variantFor,
+} from '@/components/custom/package-status';
 import Loader from '@/components/loader';
 import {Badge} from '@/components/ui/badge';
 import {Button} from '@/components/ui/button';
@@ -22,63 +26,57 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import {useSidebar} from '@/components/ui/sidebar';
-import {StatusDot, type StatusTone} from '@/components/ui/status-dot';
-import {type CustomPackage, type CustomRepo, UserScope} from '@/lib/typings';
+import {StatusDot} from '@/components/ui/status-dot';
+import {useInfiniteList} from '@/lib/hooks/use-infinite-list';
+import {
+  type CustomPackage,
+  type CustomRepo,
+  isActionError,
+  unwrapOr,
+  UserScope,
+} from '@/lib/typings';
 import {checkScopes} from '@/lib/utils';
 
-const statusTone: Record<string, StatusTone> = {
-  BUILDING: 'building',
-  DONE: 'success',
-  FAILED: 'danger',
-  QUEUED: 'warning',
-  SKIPPED: 'muted',
-};
-
-const statusVariant: Record<
-  string,
-  'building' | 'danger' | 'muted' | 'success' | 'warning'
-> = {
-  BUILDING: 'building',
-  DONE: 'success',
-  FAILED: 'danger',
-  QUEUED: 'warning',
-  SKIPPED: 'muted',
-};
-
 export default function PackagesListPage() {
-  const {scopes} = useSidebar();
+  const {scopes, username: currentUser} = useSidebar();
   const isAdmin = useMemo(
     () => checkScopes(scopes, [UserScope.ADMIN]),
     [scopes]
   );
 
-  const [packages, setPackages] = useState<CustomPackage[]>([]);
   const [repos, setRepos] = useState<CustomRepo[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [search, setSearch] = useState('');
-  const [archFilter, setArchFilter] = useState('ALL');
-  const [statusFilter, setStatusFilter] = useState('ALL');
+  const [filters, setFilters] = useState({
+    archFilter: 'ALL',
+    search: '',
+    statusFilter: 'ALL',
+  });
+  const [dialog, setDialog] = useState<{
+    open: boolean;
+    selected: CustomPackage | null;
+  }>({open: false, selected: null});
 
-  const [dialogOpen, setDialogOpen] = useState(false);
-  const [selected, setSelected] = useState<CustomPackage | null>(null);
-  const [currentUser, setCurrentUser] = useState('');
+  const {archFilter, search, statusFilter} = filters;
+  const {open: dialogOpen, selected} = dialog;
 
-  const refresh = useCallback(() => {
-    setLoading(true);
-    Promise.all([getCustomPackages(), getCustomRepos()])
-      .then(([pkgs, rs]) => {
-        if (!('error' in pkgs)) setPackages(pkgs.custom_packages);
-        if (!('error' in rs)) setRepos(rs.repos);
-      })
-      .finally(() => setLoading(false));
+  const fetchPage = useCallback(async (page: number, size: number) => {
+    const r = await getCustomPackages(page, size);
+    if (isActionError(r)) return r;
+    return {items: r.custom_packages, totalPages: r.total_pages};
   }, []);
 
+  const {
+    hasMore,
+    items: packages,
+    loading,
+    reload,
+    sentinelRef,
+  } = useInfiniteList<CustomPackage>(fetchPage);
+
   useEffect(() => {
-    refresh();
-    getLoggedInUser(false).then(u => {
-      if (!('error' in u)) setCurrentUser(u.username);
+    getCustomRepos().then(rs => {
+      setRepos(unwrapOr(rs, {repos: [], total_items: 0, total_pages: 0}).repos);
     });
-  }, [refresh]);
+  }, []);
 
   const archOptions = useMemo(() => {
     const s = new Set<string>();
@@ -105,6 +103,8 @@ export default function PackagesListPage() {
     });
   }, [packages, search, archFilter, statusFilter]);
 
+  const initialLoading = loading && packages.length === 0;
+
   return (
     <div className="flex flex-col gap-4">
       <PageHeader
@@ -117,13 +117,20 @@ export default function PackagesListPage() {
           <Search className="pointer-events-none absolute left-2.5 top-1/2 size-3.5 -translate-y-1/2 text-muted-foreground" />
           <Input
             className="h-8 pl-8"
-            onChange={e => setSearch(e.target.value)}
+            onChange={e =>
+              setFilters(prev => ({...prev, search: e.target.value}))
+            }
             placeholder="Search packages…"
             value={search}
           />
         </div>
         <div className="ml-auto flex items-center gap-2">
-          <Select onValueChange={setStatusFilter} value={statusFilter}>
+          <Select
+            onValueChange={v =>
+              setFilters(prev => ({...prev, statusFilter: v}))
+            }
+            value={statusFilter}
+          >
             <SelectTrigger className="h-8 w-[140px]">
               <SelectValue placeholder="Status" />
             </SelectTrigger>
@@ -136,7 +143,10 @@ export default function PackagesListPage() {
               ))}
             </SelectContent>
           </Select>
-          <Select onValueChange={setArchFilter} value={archFilter}>
+          <Select
+            onValueChange={v => setFilters(prev => ({...prev, archFilter: v}))}
+            value={archFilter}
+          >
             <SelectTrigger className="h-8 w-[140px]">
               <SelectValue placeholder="Architecture" />
             </SelectTrigger>
@@ -152,7 +162,7 @@ export default function PackagesListPage() {
         </div>
       </FilterToolbar>
 
-      {loading ? (
+      {initialLoading ? (
         <Loader animate text="Loading packages…" />
       ) : filtered.length === 0 ? (
         <EmptyState
@@ -166,59 +176,66 @@ export default function PackagesListPage() {
         />
       ) : (
         <ul className="flex flex-col divide-y rounded-lg border">
-          {filtered.map(pkg => {
-            const tone = statusTone[pkg.status] ?? 'muted';
-            const variant = statusVariant[pkg.status] ?? 'muted';
-            return (
-              <li
-                className="group flex items-center gap-4 px-4 py-3 transition-colors hover:bg-muted/50"
-                key={`${pkg.repository}-${pkg.march}-${pkg.pkgname}`}
-              >
-                <StatusDot pulse={pkg.status === 'BUILDING'} tone={tone} />
-                <div className="flex min-w-0 flex-1 flex-col gap-0.5">
-                  <span className="truncate text-sm font-medium">
-                    {pkg.pkgbase}
-                  </span>
-                  <MetadataRow
-                    items={[
-                      {value: pkg.pkgname},
-                      {value: pkg.repository},
-                      {value: pkg.march},
-                      {label: 'v', mono: true, value: pkg.version},
-                      {
-                        value: new Date(pkg.updated * 1000).toLocaleString(),
-                      },
-                    ]}
-                  />
-                </div>
-                <Badge variant={variant}>{pkg.status}</Badge>
-                {isAdmin && (
-                  <Button
-                    className="opacity-0 transition-opacity group-hover:opacity-100"
-                    onClick={() => {
-                      setSelected(pkg);
-                      setDialogOpen(true);
-                    }}
-                    size="xs"
-                    variant="outline"
-                  >
-                    <UserPlus className="size-3.5" />
-                    Maintainer
-                  </Button>
-                )}
-              </li>
-            );
-          })}
+          {filtered.map(pkg => (
+            <li
+              className="group flex items-center gap-4 px-4 py-3 transition-colors hover:bg-muted/50"
+              key={`${pkg.repository}-${pkg.march}-${pkg.pkgname}`}
+            >
+              <StatusDot
+                pulse={pulseFor(pkg.status)}
+                tone={toneFor(pkg.status)}
+              />
+              <div className="flex min-w-0 flex-1 flex-col gap-0.5">
+                <span className="truncate text-sm font-medium">
+                  {pkg.pkgbase}
+                </span>
+                <MetadataRow
+                  items={[
+                    {value: pkg.pkgname},
+                    {value: pkg.repository},
+                    {value: pkg.march},
+                    {label: 'v', mono: true, value: pkg.version},
+                    {
+                      value: new Date(pkg.updated * 1000).toLocaleString(),
+                    },
+                  ]}
+                />
+              </div>
+              <Badge variant={variantFor(pkg.status)}>{pkg.status}</Badge>
+              {isAdmin && (
+                <Button
+                  className="opacity-0 transition-opacity group-hover:opacity-100"
+                  onClick={() => setDialog({open: true, selected: pkg})}
+                  size="xs"
+                  variant="outline"
+                >
+                  <UserPlus className="size-3.5" />
+                  Maintainer
+                </Button>
+              )}
+            </li>
+          ))}
         </ul>
+      )}
+
+      {hasMore && (
+        <div
+          className="py-2 text-center text-xs text-muted-foreground"
+          ref={sentinelRef}
+        >
+          {loading ? 'Loading more…' : ''}
+        </div>
       )}
 
       <AddMaintainerDialog
         currentUser={currentUser}
-        onOpenChange={open => {
-          setDialogOpen(open);
-          if (!open) setSelected(null);
-        }}
-        onSuccess={refresh}
+        onOpenChange={open =>
+          setDialog(prev => ({
+            open,
+            selected: open ? prev.selected : null,
+          }))
+        }
+        onSuccess={reload}
         open={dialogOpen}
         packages={selected ? [selected] : packages}
         repos={repos}
