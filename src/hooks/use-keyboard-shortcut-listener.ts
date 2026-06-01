@@ -11,6 +11,7 @@ export function useGenericShortcutListener(
 ) {
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
+      if (!event.key) return;
       if (
         (event.ctrlKey || event.metaKey || ignoreModifiers) &&
         event.key.toLowerCase() === key.toLowerCase()
@@ -38,6 +39,7 @@ export function useGenericVimShortcutListener(
     let timer: NodeJS.Timeout | undefined;
     let colonPressed = false;
     const handleKeyDown = (event: KeyboardEvent) => {
+      if (!event.key) return;
       if (event.key === ':') {
         colonPressed = true;
         timer = setTimeout(() => {
@@ -75,6 +77,7 @@ export function useGenericVimShortcutListener(
 export function useNumericKeyShortcutListener(callback: (key: number) => void) {
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
+      if (!event.key) return;
       const key = event.key.toLowerCase();
       if ((event.ctrlKey || event.metaKey) && numericKeyRegex.test(key)) {
         event.preventDefault();
@@ -101,6 +104,7 @@ export function useNumericKeyVimShortcutListener(
     let timer: NodeJS.Timeout | undefined;
     let colonPressed = false;
     const handleKeyDown = (event: KeyboardEvent) => {
+      if (!event.key) return;
       const key = event.key.toLowerCase();
       if (key === ':') {
         colonPressed = true;
