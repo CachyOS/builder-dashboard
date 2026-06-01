@@ -41,7 +41,7 @@ import {
   unwrapOr,
   UserScope,
 } from '@/lib/typings';
-import {checkScopes} from '@/lib/utils';
+import {checkScopes, unixToDate} from '@/lib/utils';
 
 export default function MaintainerDetailPage() {
   const params = useParams<{username: string}>();
@@ -103,7 +103,7 @@ export default function MaintainerDetailPage() {
   const oldestGrant = useMemo(() => {
     let oldest: null | number = null;
     for (const p of userPolicies) {
-      const t = new Date(p.granted_at).getTime();
+      const t = unixToDate(p.granted_at).getTime();
       if (isNaN(t)) continue;
       if (oldest === null || t < oldest) oldest = t;
     }
@@ -213,7 +213,11 @@ export default function MaintainerDetailPage() {
                       {value: policy.repo_name},
                       {value: policy.march},
                       {label: 'by', value: policy.granter_username},
-                      {value: new Date(policy.granted_at).toLocaleDateString()},
+                      {
+                        value: unixToDate(
+                          policy.granted_at
+                        ).toLocaleDateString(),
+                      },
                     ]}
                   />
                 </div>

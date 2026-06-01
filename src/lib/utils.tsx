@@ -24,6 +24,10 @@ export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
 }
 
+export function unixToDate(seconds: number): Date {
+  return new Date(seconds * 1000);
+}
+
 export function getColorClassNameByPackageStatus(status: PackageStatus) {
   switch (status) {
     case PackageStatus.BUILDING:

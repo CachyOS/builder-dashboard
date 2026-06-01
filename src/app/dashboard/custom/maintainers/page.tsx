@@ -28,7 +28,7 @@ import {
   unwrapOr,
   UserScope,
 } from '@/lib/typings';
-import {checkScopes} from '@/lib/utils';
+import {checkScopes, unixToDate} from '@/lib/utils';
 
 interface MaintainerGroup {
   autoQueueAll: boolean;
@@ -200,7 +200,7 @@ function groupByUsername(policies: MaintainerPolicy[]): MaintainerGroup[] {
     .map(([username, ps]) => {
       const dates: Date[] = [];
       for (const p of ps) {
-        const d = new Date(p.granted_at);
+        const d = unixToDate(p.granted_at);
         if (!isNaN(d.getTime())) dates.push(d);
       }
       return {
