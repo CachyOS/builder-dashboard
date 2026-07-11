@@ -14,6 +14,18 @@ export enum PackageMArch {
 
 export const packageMArchValues = Object.values(PackageMArch);
 
+// Valid arches for the log viewer.
+export type LogMArch = 'x86_64' | PackageMArch;
+
+export const logMArchValues: readonly LogMArch[] = [
+  ...packageMArchValues,
+  'x86_64',
+];
+
+export function isLogMArch(value: string): value is LogMArch {
+  return (logMArchValues as readonly string[]).includes(value);
+}
+
 export const packageMArch = z.enum(
   PackageMArch,
   `Architecture must be one of: ${packageMArchValues.join(', ')}`

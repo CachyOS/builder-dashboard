@@ -11,9 +11,9 @@ import {
   ListPackageResponse,
   ListPackageResponseSchema,
   ListPackagesQuery,
+  LogMArch,
   PackageList,
   PackageListSchema,
-  PackageMArch,
   RebuildPackageList,
   RebuildPackageListSchema,
   RebuildPackageResponse,
@@ -68,7 +68,7 @@ export class PackagesClient {
 
   public async getPackageLog(
     pkg: string,
-    march: PackageMArch,
+    march: LogMArch,
     strip = false,
     clientHeaders = new Headers()
   ): Promise<string> {

@@ -1,7 +1,7 @@
 import {NextRequest, NextResponse} from 'next/server';
 
 import {getPackageLog} from '@/app/actions/packages';
-import {PackageMArch, packageMArchValues} from '@/lib/typings';
+import {isLogMArch} from '@/lib/typings';
 
 export async function GET(
   req: NextRequest,
@@ -16,10 +16,10 @@ export async function GET(
   if (!march || !pkgbase) {
     return new NextResponse('Not found', {status: 404});
   }
-  if (!packageMArchValues.includes(march as PackageMArch)) {
+  if (!isLogMArch(march)) {
     return new NextResponse('Not found', {status: 404});
   }
-  const log = await getPackageLog(pkgbase, march as PackageMArch, true);
+  const log = await getPackageLog(pkgbase, march, true);
   if (typeof log !== 'string') {
     return new NextResponse('Not found', {status: 404});
   }

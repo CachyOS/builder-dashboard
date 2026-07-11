@@ -13,7 +13,7 @@ import {getPackageLog} from '@/app/actions/packages';
 import Loader from '@/components/loader';
 import {Input} from '@/components/ui/input';
 import {useGenericShortcutListener} from '@/hooks/use-keyboard-shortcut-listener';
-import {PackageMArch} from '@/lib/typings';
+import {LogMArch} from '@/lib/typings';
 
 import '@xterm/xterm/css/xterm.css';
 
@@ -25,7 +25,7 @@ export default function TerminalComponent({
   march,
   pkgbase,
 }: Readonly<{
-  march: PackageMArch;
+  march: LogMArch;
   pkgbase: string;
 }>) {
   const [loaded, setLoaded] = useState(false);

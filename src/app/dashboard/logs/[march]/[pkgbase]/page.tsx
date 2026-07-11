@@ -4,7 +4,7 @@ import dynamic from 'next/dynamic';
 import {useParams} from 'next/navigation';
 
 import Loader from '@/components/loader';
-import {PackageMArch, packageMArchValues} from '@/lib/typings';
+import {isLogMArch, logMArchValues} from '@/lib/typings';
 
 const TerminalComponent = dynamic(
   () => import('@/components/terminal-component'),
@@ -16,17 +16,17 @@ const TerminalComponent = dynamic(
 
 export default function LogsPage() {
   const {march, pkgbase} = useParams<{
-    march: PackageMArch;
+    march: string;
     pkgbase: string;
   }>();
   if (!march || !pkgbase) {
     return <Loader animate={false} text="Invalid MARCH or PKGBASE" />;
   }
-  if (!packageMArchValues.includes(march)) {
+  if (!isLogMArch(march)) {
     return (
       <Loader
         animate={false}
-        text={`Invalid MARCH, valid MARCH: ${packageMArchValues.join(', ')}, got: ${march}`}
+        text={`Invalid MARCH, valid MARCH: ${logMArchValues.join(', ')}, got: ${march}`}
       />
     );
   }

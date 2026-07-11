@@ -7,6 +7,7 @@ import {getSession} from '@/app/actions/session';
 import {
   BasePackageWithIDList,
   ListPackagesQuery,
+  LogMArch,
   PackageMArch,
   PackageRepo,
   SearchPackagesQuery,
@@ -32,7 +33,7 @@ export async function bulkRebuildPackages(packages: BasePackageWithIDList) {
 
 export async function getPackageLog(
   pkg: string,
-  march: PackageMArch,
+  march: LogMArch,
   strip = false
 ) {
   const {cachyBuilderClient, session} = await getSession();
