@@ -89,6 +89,17 @@ export default function SubmissionsListPage() {
     });
   }, []);
 
+  // `now` feeds the "recent only" cutoff
+  useEffect(() => {
+    if (!filters.recentOnly) return;
+    setPageUi(prev => ({...prev, now: Date.now()}));
+    const id = setInterval(
+      () => setPageUi(prev => ({...prev, now: Date.now()})),
+      60_000
+    );
+    return () => clearInterval(id);
+  }, [filters.recentOnly]);
+
   const {remove, save, views} = useSavedViews<SubmissionFilters>(
     'custom.submissions.savedViews',
     BUILTIN_VIEWS
