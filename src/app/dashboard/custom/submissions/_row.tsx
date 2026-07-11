@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link';
+import {memo} from 'react';
 
 import type {PackageSubmission} from '@/lib/typings';
 
@@ -22,7 +23,7 @@ interface SubmissionRowProps {
   submission: PackageSubmission;
 }
 
-export function SubmissionRow({
+export const SubmissionRow = memo(function SubmissionRow({
   onToggle,
   selected,
   submission,
@@ -58,4 +59,4 @@ export function SubmissionRow({
       <Badge variant={badgeVariantFor(status)}>{labelFor(status)}</Badge>
     </li>
   );
-}
+});
