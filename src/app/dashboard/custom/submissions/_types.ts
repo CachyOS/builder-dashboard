@@ -39,14 +39,6 @@ export const BUILTIN_VIEWS: SavedView<SubmissionFilters>[] = [
   },
 ];
 
-export type SubmissionBadgeVariant =
-  | 'building'
-  | 'danger'
-  | 'info'
-  | 'muted'
-  | 'success'
-  | 'warning';
-
 export function actionLabel(a: BulkAction): string {
   switch (a) {
     case 'approve':
@@ -57,25 +49,5 @@ export function actionLabel(a: BulkAction): string {
       return 'Queue build';
     case 'reject':
       return 'Reject';
-  }
-}
-
-export function badgeVariantFor(
-  status: string | SubmissionStatus
-): SubmissionBadgeVariant {
-  switch (status) {
-    case SubmissionStatus.APPROVED:
-      return 'info';
-    case SubmissionStatus.BUILD_DONE:
-      return 'success';
-    case SubmissionStatus.BUILD_FAILED:
-    case SubmissionStatus.REJECTED:
-      return 'danger';
-    case SubmissionStatus.BUILD_QUEUED:
-      return 'building';
-    case SubmissionStatus.PENDING_REVIEW:
-      return 'warning';
-    default:
-      return 'muted';
   }
 }

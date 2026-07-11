@@ -15,8 +15,6 @@ import {Checkbox} from '@/components/ui/checkbox';
 import {MetadataRow} from '@/components/ui/metadata-row';
 import {StatusDot} from '@/components/ui/status-dot';
 
-import {badgeVariantFor} from './_types';
-
 interface SubmissionRowProps {
   onToggle: (id: string) => void;
   selected: boolean;
@@ -56,7 +54,7 @@ export const SubmissionRow = memo(function SubmissionRow({
           ]}
         />
       </Link>
-      <Badge variant={badgeVariantFor(status)}>{labelFor(status)}</Badge>
+      <Badge variant={toneFor(status)}>{labelFor(status)}</Badge>
     </li>
   );
 });
