@@ -4,6 +4,13 @@ import {useEffect, useState} from 'react';
 
 const numericKeyRegex = /^\d$/;
 
+const isTyping = (event: KeyboardEvent) =>
+  !event.ctrlKey &&
+  !event.metaKey &&
+  event.target instanceof HTMLElement &&
+  (event.target.isContentEditable ||
+    ['INPUT', 'SELECT', 'TEXTAREA'].includes(event.target.tagName));
+
 export function useGenericShortcutListener(
   key: string,
   callback: () => void,
@@ -11,7 +18,7 @@ export function useGenericShortcutListener(
 ) {
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
-      if (!event.key) return;
+      if (!event.key || isTyping(event)) return;
       if (
         (event.ctrlKey || event.metaKey || ignoreModifiers) &&
         event.key.toLowerCase() === key.toLowerCase()
