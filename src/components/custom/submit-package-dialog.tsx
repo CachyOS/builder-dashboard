@@ -146,7 +146,7 @@ export function SubmitPackageDialog({
             <Input
               id="submit-git-url"
               onChange={e => setGitRepoUrl(e.target.value)}
-              placeholder="https://github.com/user/repo.git"
+              placeholder="https://github.com/CachyOS/repo.git"
               required
               value={gitRepoUrl}
             />

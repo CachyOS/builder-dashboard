@@ -1,5 +1,12 @@
 import {z} from 'zod/v4';
 
+import {
+  gitUrlError,
+  isValidPkgbase,
+  isValidPkgPath,
+  MAX_PKG_PATH_LEN,
+} from '@/lib/custom-validation';
+
 export enum APIVersion {
   V1 = 'v1',
   V2 = 'v2',
@@ -549,8 +556,14 @@ export const PackageSubmissionSchema = z.object({
   pkg_path_in_repo: z.string(),
   pkgbase: z.string(),
   repo_name: z.string(),
-  review_note: z.string().nullish().transform(v => v ?? ''),
-  reviewer: z.string().nullish().transform(v => v ?? ''),
+  review_note: z
+    .string()
+    .nullish()
+    .transform(v => v ?? ''),
+  reviewer: z
+    .string()
+    .nullish()
+    .transform(v => v ?? ''),
   submission_status: submissionStatus,
   submitter: z.string(),
   updated: z.number(),
@@ -566,9 +579,17 @@ export type PackageSubmissionResponse = z.infer<
 >;
 
 export const SubmitPackageRequestSchema = z.strictObject({
-  git_repo_url: z.string().min(1),
-  pkg_path_in_repo: z.string().default(''),
-  pkgbase: z.string().min(1),
+  git_repo_url: z.string().check(ctx => {
+    const message = gitUrlError(ctx.value);
+    if (message) ctx.issues.push({code: 'custom', input: ctx.value, message});
+  }),
+  pkg_path_in_repo: z
+    .string()
+    .default('')
+    .refine(isValidPkgPath, {
+      error: `Relative path only, up to ${MAX_PKG_PATH_LEN}`,
+    }),
+  pkgbase: z.string().refine(isValidPkgbase, {error: 'Invalid pkgbase'}),
   repo_id: z.string().min(1),
 });
 export type SubmitPackageRequest = z.infer<typeof SubmitPackageRequestSchema>;
