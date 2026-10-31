@@ -589,8 +589,11 @@ export const SubmitPackageRequestSchema = z.strictObject({
     .refine(isValidPkgPath, {
       error: `Relative path only, up to ${MAX_PKG_PATH_LEN}`,
     }),
-  pkgbase: z.string().refine(isValidPkgbase, {error: 'Invalid pkgbase'}),
-  repo_id: z.string().min(1),
+  pkgbase: z
+    .string()
+    .min(1, {error: 'Required'})
+    .refine(isValidPkgbase, {error: 'Invalid pkgbase'}),
+  repo_id: z.string().min(1, {error: 'Select a repository'}),
 });
 export type SubmitPackageRequest = z.infer<typeof SubmitPackageRequestSchema>;
 
@@ -635,9 +638,13 @@ export type MaintainerListResponse = z.infer<
 
 export const AddMaintainerRequestSchema = z.strictObject({
   auto_queue: z.boolean().default(false),
-  pkgbase: z.string().min(1),
-  repo_id: z.string().min(1),
-  username: z.string().min(1),
+  pkgbase: z
+    .string()
+    .trim()
+    .min(1, {error: 'Required'})
+    .refine(isValidPkgbase, {error: 'Invalid pkgbase'}),
+  repo_id: z.string().min(1, {error: 'Select a repository'}),
+  username: z.string().trim().min(1, {error: 'Required'}),
 });
 export type AddMaintainerRequest = z.infer<typeof AddMaintainerRequestSchema>;
 
